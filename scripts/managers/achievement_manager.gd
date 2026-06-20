@@ -3,7 +3,7 @@ extends Node
 
 const AchievementDataGD = preload("res://scripts/data/achievement_data.gd")
 
-signal achievement_unlocked(achievement)
+signal achievement_unlocked(achievement: AchievementDataGD)
 
 const ACHIEVEMENTS: Array[Dictionary] = [
 	{"id": "first_blood", "name": "首杀", "desc": "击败第一个敌人", "type": AchievementDataGD.Type.KILLS, "target": 1, "reward_gold": 50, "reward_attack": 0, "reward_defense": 0},
@@ -20,24 +20,17 @@ const ACHIEVEMENTS: Array[Dictionary] = [
 	{"id": "immortal", "name": "不朽传说", "desc": "到达第 50 关", "type": AchievementDataGD.Type.STAGE, "target": 50, "reward_gold": 8000, "reward_attack": 15, "reward_defense": 10}
 ]
 
-var achievements = []
+var achievements: Array[AchievementDataGD] = []
 var completed_ids: Array[String] = []
 
 @export var player_data: PlayerData
-@export var game_manager: GameManager
 
 func _ready() -> void:
 	add_to_group("achievement_manager")
 	_init_achievements()
 	
-	if game_manager == null:
-		game_manager = get_tree().get_first_node_in_group("game_manager") as GameManager
-	if player_data == null and game_manager:
-		player_data = game_manager.player_data
-	
-	if game_manager:
-		EventBus.enemy_defeated.connect(_on_enemy_defeated)
-		EventBus.stage_changed.connect(_on_stage_changed)
+	EventBus.enemy_defeated.connect(_on_enemy_defeated)
+	EventBus.stage_changed.connect(_on_stage_changed)
 	if player_data:
 		player_data.leveled_up.connect(_on_level_up)
 		player_data.stats_changed.connect(_on_stats_changed)
@@ -45,7 +38,7 @@ func _ready() -> void:
 func _init_achievements() -> void:
 	achievements.clear()
 	for data: Dictionary in ACHIEVEMENTS:
-		var ach = AchievementDataGD.new(data.id, data.name, data.desc, data.type, data.target)
+		var ach: AchievementDataGD = AchievementDataGD.new(data.id, data.name, data.desc, data.type, data.target)
 		ach.reward_gold = data.reward_gold
 		ach.reward_attack = data.reward_attack
 		ach.reward_defense = data.reward_defense
@@ -53,7 +46,7 @@ func _init_achievements() -> void:
 		achievements.append(ach)
 
 func check_achievements(type: int, value: int) -> void:
-	for ach in achievements:
+	for ach: AchievementDataGD in achievements:
 		if ach.completed:
 			continue
 		if ach.type != type:
@@ -61,7 +54,7 @@ func check_achievements(type: int, value: int) -> void:
 		if value >= ach.target:
 			_unlock_achievement(ach)
 
-func _unlock_achievement(ach) -> void:
+func _unlock_achievement(ach: AchievementDataGD) -> void:
 	ach.completed = true
 	completed_ids.append(ach.id)
 	_apply_reward(ach)
@@ -69,7 +62,7 @@ func _unlock_achievement(ach) -> void:
 	EventBus.achievement_unlocked.emit(ach)
 	EventBus.message_logged.emit("成就解锁：%s！%s" % [ach.name, ach.get_reward_text()])
 
-func _apply_reward(ach) -> void:
+func _apply_reward(ach: AchievementDataGD) -> void:
 	if player_data == null:
 		return
 	player_data.bonus_attack += ach.reward_attack
@@ -93,7 +86,7 @@ func _on_stats_changed() -> void:
 
 func get_completed_count() -> int:
 	var count: int = 0
-	for ach in achievements:
+	for ach: AchievementDataGD in achievements:
 		if ach.completed:
 			count += 1
 	return count

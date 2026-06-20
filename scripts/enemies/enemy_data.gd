@@ -25,16 +25,20 @@ func _init(p_name: String, p_level: int, p_is_boss: bool = false) -> void:
 
 func generate_stats() -> void:
 	var level_multiplier: float = 1.0 + (level - 1) * BalanceConfig.ENEMY_ATK_MULTIPLIER
-	var boss_multiplier: float = BalanceConfig.BOSS_HP_MULTIPLIER if is_boss else 1.0
+	var boss_hp_multiplier: float = BalanceConfig.BOSS_HP_MULTIPLIER if is_boss else 1.0
+	var boss_atk_multiplier: float = BalanceConfig.BOSS_ATK_MULTIPLIER if is_boss else 1.0
+	var boss_def_multiplier: float = BalanceConfig.BOSS_DEF_MULTIPLIER if is_boss else 1.0
+	var boss_exp_multiplier: float = BalanceConfig.BOSS_EXP_MULTIPLIER if is_boss else 1.0
+	var boss_gold_multiplier: float = BalanceConfig.BOSS_GOLD_MULTIPLIER if is_boss else 1.0
 
-	max_hp = int(50 * level_multiplier * boss_multiplier)
+	max_hp = int(BalanceConfig.ENEMY_BASE_HP * level_multiplier * boss_hp_multiplier)
 	hp = max_hp
-	attack = int((5 + level * 0.8) * level_multiplier * (BalanceConfig.BOSS_ATK_MULTIPLIER if is_boss else 1.0))
-	defense = int((2 + level * 0.3) * level_multiplier * (1.5 if is_boss else 1.0))
-	attack_speed = min(2.0, 0.8 * (1.0 + level * 0.03))
+	attack = int((BalanceConfig.ENEMY_BASE_ATK + level * 0.8) * level_multiplier * boss_atk_multiplier)
+	defense = int((BalanceConfig.ENEMY_BASE_DEF + level * 0.3) * level_multiplier * boss_def_multiplier)
+	attack_speed = min(BalanceConfig.ENEMY_ATK_SPEED_CAP, BalanceConfig.ENEMY_BASE_ATK_SPEED * (1.0 + level * BalanceConfig.ENEMY_ATK_SPEED_LEVEL_GROWTH))
 
-	exp_reward = int(20 * level_multiplier * boss_multiplier * (2.0 if is_boss else 1.0))
-	gold_reward = int(10 * level_multiplier * boss_multiplier * (2.5 if is_boss else 1.0))
+	exp_reward = int(BalanceConfig.ENEMY_BASE_EXP * level_multiplier * boss_hp_multiplier * boss_exp_multiplier)
+	gold_reward = int(BalanceConfig.ENEMY_BASE_GOLD * level_multiplier * boss_hp_multiplier * boss_gold_multiplier)
 
 	if is_boss:
 		color = Color.CRIMSON

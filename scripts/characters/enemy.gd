@@ -8,6 +8,9 @@ extends Node2D
 @onready var hp_bar: ProgressBar = $HPBar
 
 var current_enemy: EnemyData = null
+var _death_tween: Tween = null
+
+static var _sprite_frames_cache: Dictionary = {}
 
 const ANIM_PATHS: Dictionary = {
 	"史莱姆": "res://assets/images/animations/monsters/slime_idle.png",
@@ -19,7 +22,7 @@ const ANIM_PATHS: Dictionary = {
 
 const FALLBACK_NAMES: PackedStringArray = ["史莱姆", "哥布林", "蝙蝠", "骷髅兵"]
 
-const DeathParticlesScene: PackedScene = preload("res://scenes/death_particles.tscn")
+
 
 func _ready() -> void:
 	add_to_group("enemy")
@@ -46,6 +49,10 @@ func _on_battle_started(enemy: EnemyData) -> void:
 	body.modulate = Color.WHITE
 	hp_bar.visible = true
 	shadow.visible = true
+	## 取消旧的死亡淡出，避免新敌人阴影被旧 tween 关闭
+	if _death_tween != null and _death_tween.is_valid():
+		_death_tween.kill()
+		_death_tween = null
 	_update_appearance()
 
 func _on_enemy_attacked(_damage: int, _is_crit: bool) -> void:
@@ -67,15 +74,15 @@ func _on_hit_flash_timer_timeout() -> void:
 	body.modulate = Color.WHITE
 
 func _on_enemy_died(_enemy: EnemyData) -> void:
-	var particles: CPUParticles2D = DeathParticlesScene.instantiate() as CPUParticles2D
-	particles.global_position = global_position
-	get_tree().current_scene.add_child(particles)
+	DeathParticles.spawn(get_tree().current_scene, global_position)
 	## 死亡时停止待机动画、淡出并隐藏血条
 	body.stop()
 	hp_bar.visible = false
-	var tween: Tween = create_tween()
-	tween.tween_property(body, "modulate", Color(1, 1, 1, 0), 0.5)
-	tween.tween_callback(func() -> void: shadow.visible = false)
+	if _death_tween != null and _death_tween.is_valid():
+		_death_tween.kill()
+	_death_tween = create_tween()
+	_death_tween.tween_property(body, "modulate", Color(1, 1, 1, 0), 0.5)
+	_death_tween.tween_callback(func() -> void: shadow.visible = false)
 
 func _update_appearance() -> void:
 	if current_enemy == null:
@@ -94,6 +101,11 @@ func _update_appearance() -> void:
 	hp_bar.value = 100
 
 func _setup_sprite_frames(enemy_name: String) -> void:
+	if _sprite_frames_cache.has(enemy_name):
+		body.sprite_frames = _sprite_frames_cache[enemy_name]
+		body.play("idle")
+		return
+
 	var path: String = ANIM_PATHS.get(enemy_name, ANIM_PATHS["史莱姆"]) as String
 	var texture: Texture2D = load(path) as Texture2D
 	if texture == null:
@@ -116,5 +128,6 @@ func _setup_sprite_frames(enemy_name: String) -> void:
 		atlas.region = Rect2(i * frame_width, 0.0, frame_width, frame_height)
 		frames.add_frame("idle", atlas)
 
+	_sprite_frames_cache[enemy_name] = frames
 	body.sprite_frames = frames
 	body.play("idle")

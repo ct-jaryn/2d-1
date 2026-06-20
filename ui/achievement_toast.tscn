@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://ui/achievement_toast.gd" id="1_toast"]
 
 [node name="AchievementToast" type="CanvasLayer"]
+layer = 4
 script = ExtResource("1_toast")
 
 [node name="PanelContainer" type="PanelContainer" parent="."]

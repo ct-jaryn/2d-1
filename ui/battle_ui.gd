@@ -24,6 +24,7 @@ extends CanvasLayer
 @onready var enemy_hp: ProgressBar = $MainMargin/RootVBox/TopBar/EnemyCard/VBox/EnemyHPBar
 @onready var side_panel: VBoxContainer = $MainMargin/RootVBox/MainArea/SidePanel
 @onready var skill_bar: HBoxContainer = $MainMargin/RootVBox/MainArea/SidePanel/SkillPanel/VBox/SkillBar
+@onready var log_panel: PanelContainer = $MainMargin/RootVBox/MainArea/SidePanel/LogPanel
 @onready var log_text: RichTextLabel = $MainMargin/RootVBox/MainArea/SidePanel/LogPanel/LogText
 @onready var log_text_mobile: RichTextLabel = $MainMargin/RootVBox/FloatingLogPanel/LogTextMobile
 @onready var floating_log_panel: PanelContainer = $MainMargin/RootVBox/FloatingLogPanel
@@ -37,6 +38,7 @@ const NARROW_WIDTH_THRESHOLD: int = 700
 const GOLD_ICON: Texture2D = preload("res://assets/images/icon_gold.png")
 
 var skill_buttons: Dictionary = {}
+var _skill_by_type: Dictionary = {}
 var _current_log: RichTextLabel
 
 func _ready() -> void:
@@ -85,9 +87,21 @@ func _ready() -> void:
 	_log_message("[b]欢迎进入像素挂机勇者[/b]")
 	_log_message("击败敌人 → 获得金币/经验/装备")
 	_log_message("挑战 Boss → 进入下一区域")
+	
+	## 若 GameManager 在 BattleUI._ready 之前已生成敌人，手动同步一次 UI
+	if battle_manager and battle_manager.enemy_data != null:
+		_on_enemy_spawned(battle_manager.enemy_data)
+		_update_boss_button()
+	
 	_show_tutorial_if_needed()
 
 func _unhandled_input(event: InputEvent) -> void:
+	## 暂停或有子界面打开时，战斗快捷键不应响应
+	if get_tree().paused:
+		return
+	if _any_sub_ui_visible():
+		return
+	
 	if event.is_action_pressed("open_equipment"):
 		_on_equipment_button_pressed()
 	elif event.is_action_pressed("open_shop"):
@@ -104,6 +118,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		_cast_skill_by_index(1)
 	elif event.is_action_pressed("cast_skill_3"):
 		_cast_skill_by_index(2)
+
+func _any_sub_ui_visible() -> bool:
+	for sub_ui: CanvasLayer in get_tree().get_nodes_in_group("sub_ui"):
+		if sub_ui.visible:
+			return true
+	return false
 
 func _cast_skill_by_index(index: int) -> void:
 	if game_manager == null or game_manager.skill_manager == null:
@@ -137,13 +157,18 @@ func _apply_responsive_layout() -> void:
 	var is_tiny: bool = width < NARROW_WIDTH_THRESHOLD or height < 500
 
 	if is_narrow:
-		side_panel.visible = false
+		## 窄屏时隐藏日志面板（使用浮动日志），但保留技能栏可见
+		log_panel.visible = false
+		side_panel.visible = true
+		side_panel.custom_minimum_size.x = 0
 		toggle_log_button.visible = true
 		_current_log = log_text_mobile
 		## 在极窄屏下底部按钮只显示图标/首字
 		_set_bottom_button_compact(is_tiny)
 	else:
+		log_panel.visible = true
 		side_panel.visible = true
+		side_panel.custom_minimum_size.x = 160
 		toggle_log_panel(false)
 		toggle_log_button.visible = false
 		_current_log = log_text
@@ -192,6 +217,7 @@ func _init_skill_bar() -> void:
 	var skill_manager: SkillManager = game_manager.skill_manager
 	skill_manager.energy_changed.connect(_on_energy_changed)
 	skill_manager.skill_casted.connect(_on_skill_casted)
+	skill_manager.cooldown_updated.connect(_on_cooldown_updated)
 
 	for skill: SkillData in skill_manager.skills:
 		var btn: Button = Button.new()
@@ -201,6 +227,7 @@ func _init_skill_bar() -> void:
 		btn.pressed.connect(_on_skill_button_pressed.bind(skill))
 		btn.mouse_entered.connect(_play_ui_hover)
 		skill_buttons[skill.type] = btn
+		_skill_by_type[skill.type] = skill
 		skill_bar.add_child(btn)
 
 func _setup_gold_icon() -> void:
@@ -258,51 +285,40 @@ func _on_energy_changed(current: int, maximum: int) -> void:
 
 func _on_skill_casted(skill: SkillData) -> void:
 	_log_message("释放技能：[color=aqua]%s[/color]" % skill.skill_name)
-	_update_skill_buttons()
+	_update_skill_button(skill.type)
+
+func _on_cooldown_updated(skill_type: int, _remaining: float) -> void:
+	_update_skill_button(skill_type)
 
 func _update_skill_buttons() -> void:
+	for type: int in skill_buttons.keys():
+		_update_skill_button(type)
+
+func _update_skill_button(type: int) -> void:
 	if game_manager == null or game_manager.skill_manager == null:
 		return
+	var btn: Button = skill_buttons.get(type)
+	var skill: SkillData = _skill_by_type.get(type)
+	if btn == null or skill == null:
+		return
 	var sm: SkillManager = game_manager.skill_manager
-	for type: int in skill_buttons.keys():
-		var btn: Button = skill_buttons[type]
-		var skill: SkillData = _get_skill_by_type(type)
-		if skill == null:
-			continue
-		var cd: float = sm.get_remaining_cooldown(type)
-		btn.disabled = not sm.can_cast(skill)
-		if cd > 0.0:
-			btn.text = "%s\n%.1fs" % [skill.skill_name, cd]
-		else:
-			btn.text = "%s\n%d" % [skill.skill_name, skill.energy_cost]
-		
-		## 可用高亮
-		if not btn.disabled:
-			btn.add_theme_color_override("font_color", Color(1, 1, 0.8, 1))
-		else:
-			btn.remove_theme_color_override("font_color")
-
-func _get_skill_by_type(type: int) -> SkillData:
-	if game_manager and game_manager.skill_manager:
-		for skill: SkillData in game_manager.skill_manager.skills:
-			if skill.type == type:
-				return skill
-	return null
+	var cd: float = sm.get_remaining_cooldown(type)
+	btn.disabled = not sm.can_cast(skill)
+	if cd > 0.0:
+		btn.text = "%s\n%.1fs" % [skill.skill_name, cd]
+	else:
+		btn.text = "%s\n%d" % [skill.skill_name, skill.energy_cost]
+	
+	## 可用高亮
+	if not btn.disabled:
+		btn.add_theme_color_override("font_color", Color(1, 1, 0.8, 1))
+	else:
+		btn.remove_theme_color_override("font_color")
 
 func _process(_delta: float) -> void:
 	if battle_manager and battle_manager.enemy_data:
 		var enemy: EnemyData = battle_manager.enemy_data
 		enemy_hp.value = float(enemy.hp) / float(enemy.max_hp) * 100.0
-	## 仅在技能冷却中才每帧刷新按钮倒计时文本
-	if game_manager and game_manager.skill_manager:
-		var sm: SkillManager = game_manager.skill_manager
-		var has_cooldown: bool = false
-		for type: int in skill_buttons.keys():
-			if sm.get_remaining_cooldown(type) > 0.0:
-				has_cooldown = true
-				break
-		if has_cooldown:
-			_update_skill_buttons()
 
 func _log_message(text: String) -> void:
 	if _current_log:

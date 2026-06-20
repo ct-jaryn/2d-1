@@ -15,6 +15,7 @@ signal boss_berserk(active: bool)
 signal player_leveled_up(new_level: int)
 signal stats_changed
 signal gold_changed(amount: int)
+signal energy_gained(amount: int)
 signal skill_casted(skill: SkillData)
 
 ## 游戏进度事件
@@ -30,4 +31,3 @@ signal daily_quests_refreshed
 ## 通用消息与反馈
 signal message_logged(text: String)
 signal play_sfx(name: String)
-signal show_floating_text(position: Vector2, text: String, type: String)

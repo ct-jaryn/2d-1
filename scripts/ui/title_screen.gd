@@ -14,6 +14,22 @@ func _ready() -> void:
 	continue_button.pressed.connect(_on_continue_pressed)
 	new_game_button.pressed.connect(_on_new_game_pressed)
 	exit_button.pressed.connect(_on_exit_pressed)
+	
+	## 设置初始焦点，改善手柄/键盘导航体验
+	if continue_button.visible:
+		continue_button.grab_focus()
+	else:
+		new_game_button.grab_focus()
+
+func _unhandled_input(event: InputEvent) -> void:
+	## 手柄/键盘方向键在按钮间移动焦点
+	if event.is_action_pressed("ui_down") or event.is_action_pressed("ui_up"):
+		var focused: Control = get_viewport().gui_get_focus_owner()
+		if focused == null:
+			if continue_button.visible:
+				continue_button.grab_focus()
+			else:
+				new_game_button.grab_focus()
 
 func _start_game(scene_path: String) -> void:
 	var audio_manager: AudioManager = get_tree().get_first_node_in_group("audio_manager") as AudioManager

@@ -135,6 +135,11 @@ func _on_player_died() -> void:
 	_is_dead = true
 	_play_animation("death")
 
+func revive() -> void:
+	_is_dead = false
+	body.modulate = Color.WHITE
+	_play_animation("idle")
+
 func _show_floating_text(damage: int, is_crit: bool, is_player_attacking: bool) -> void:
 	var ftm: FloatingTextManager = get_tree().get_first_node_in_group("floating_text_manager") as FloatingTextManager
 	if ftm == null:

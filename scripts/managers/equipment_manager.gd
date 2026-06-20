@@ -27,6 +27,8 @@ const BOSS_RARITY_BONUS: Dictionary = {
 signal equipment_changed
 signal equipment_dropped(equipment: EquipmentData)
 
+enum UnequipResult { SUCCESS, INVENTORY_FULL }
+
 ## 已装备 {Type: EquipmentData}
 var equipped: Dictionary = {}
 ## 背包
@@ -59,10 +61,16 @@ func get_equipment_bonuses() -> Dictionary:
 func get_equipped(type: EquipmentData.Type) -> EquipmentData:
 	return equipped.get(type, null) as EquipmentData
 
-func equip_item(equip: EquipmentData) -> void:
+func get_equipped_dict() -> Dictionary:
+	return equipped
+
+func equip_item(equip: EquipmentData) -> bool:
 	## 如果该部位已有装备，先放回背包
 	if equipped.has(equip.type):
 		var old: EquipmentData = equipped[equip.type]
+		if inventory.size() >= MAX_INVENTORY:
+			## 背包已满，无法替换：保留原装备，不装备新装备
+			return false
 		inventory.append(old)
 	
 	equipped[equip.type] = equip
@@ -71,24 +79,27 @@ func equip_item(equip: EquipmentData) -> void:
 	if idx >= 0:
 		inventory.remove_at(idx)
 	equipment_changed.emit()
+	return true
 
-func unequip_item(type: EquipmentData.Type) -> void:
+func unequip_item(type: EquipmentData.Type) -> UnequipResult:
 	if not equipped.has(type):
-		return
+		return UnequipResult.SUCCESS
 	var equip: EquipmentData = equipped[type]
-	if inventory.size() < MAX_INVENTORY:
-		inventory.append(equip)
+	if inventory.size() >= MAX_INVENTORY:
+		return UnequipResult.INVENTORY_FULL
+	inventory.append(equip)
 	equipped.erase(type)
 	equipment_changed.emit()
+	return UnequipResult.SUCCESS
 
-func sell_item(equip: EquipmentData) -> int:
+func sell_item(equip: EquipmentData) -> Dictionary:
 	var idx: int = inventory.find(equip)
 	if idx < 0:
-		return 0
+		return {"ok": false, "price": 0, "reason": "未找到该装备"}
 	inventory.remove_at(idx)
 	var price: int = _calculate_sell_price(equip)
 	equipment_changed.emit()
-	return price
+	return {"ok": true, "price": price, "reason": ""}
 
 func auto_equip_best() -> void:
 	## 按部位分组并选择评分最高
@@ -127,6 +138,15 @@ func add_to_inventory(equip: EquipmentData) -> bool:
 	equipment_changed.emit()
 	return true
 
+func load_equipment(p_equipped: Dictionary, p_inventory: Array[EquipmentData]) -> void:
+	## 仅用于存档加载，不触发信号，避免加载过程中重复刷新 UI
+	equipped.clear()
+	for type: int in p_equipped.keys():
+		var equip: EquipmentData = p_equipped[type] as EquipmentData
+		if equip != null:
+			equipped[type] = equip
+	inventory.assign(p_inventory)
+
 func has_drop_chance(is_boss: bool) -> bool:
 	var base_chance: float = BalanceConfig.BOSS_DROP_CHANCE if is_boss else BalanceConfig.NORMAL_DROP_CHANCE
 	return randf() < base_chance
@@ -150,34 +170,34 @@ func _roll_rarity(is_boss: bool) -> int:
 	return EquipmentData.Rarity.COMMON
 
 func _generate_stats(equip: EquipmentData, enemy_level: int, is_boss: bool) -> void:
-	var rarity_mult: float = 1.0 + equip.rarity * 0.5
-	var level_mult: float = 1.0 + (enemy_level - 1) * 0.12
-	var boss_mult: float = 1.5 if is_boss else 1.0
+	var rarity_mult: float = BalanceConfig.EQUIPMENT_RARITY_MULT_BASE + equip.rarity * BalanceConfig.EQUIPMENT_RARITY_MULT_STEP
+	var level_mult: float = 1.0 + (enemy_level - 1) * BalanceConfig.EQUIPMENT_LEVEL_MULT
+	var boss_mult: float = BalanceConfig.EQUIPMENT_BOSS_MULT if is_boss else 1.0
 	var mult: float = rarity_mult * level_mult * boss_mult
 	
 	## 根据装备类型生成主属性
 	match equip.type:
 		EquipmentData.Type.WEAPON:
-			equip.attack_bonus = int(3 * mult)
-			equip.attack_speed_bonus = snapped(randf_range(0.0, 0.15 * mult), 0.01)
-			equip.crit_rate_bonus = snapped(randf_range(0.0, 0.03 * mult), 0.001)
+			equip.attack_bonus = int(BalanceConfig.EQUIPMENT_WEAPON_ATK_BASE * mult)
+			equip.attack_speed_bonus = snapped(randf_range(0.0, BalanceConfig.EQUIPMENT_WEAPON_ASPD_MAX * mult), 0.01)
+			equip.crit_rate_bonus = snapped(randf_range(0.0, BalanceConfig.EQUIPMENT_WEAPON_CRIT_MAX * mult), 0.001)
 		EquipmentData.Type.HELMET:
-			equip.max_hp_bonus = int(8 * mult)
-			equip.defense_bonus = int(1 * mult)
+			equip.max_hp_bonus = int(BalanceConfig.EQUIPMENT_HELMET_HP_BASE * mult)
+			equip.defense_bonus = int(BalanceConfig.EQUIPMENT_HELMET_DEF_BASE * mult)
 		EquipmentData.Type.ARMOR:
-			equip.defense_bonus = int(3 * mult)
-			equip.max_hp_bonus = int(5 * mult)
+			equip.defense_bonus = int(BalanceConfig.EQUIPMENT_ARMOR_DEF_BASE * mult)
+			equip.max_hp_bonus = int(BalanceConfig.EQUIPMENT_ARMOR_HP_BASE * mult)
 		EquipmentData.Type.BOOTS:
-			equip.attack_speed_bonus = snapped(randf_range(0.05, 0.25 * mult), 0.01)
-			equip.defense_bonus = int(1 * mult)
+			equip.attack_speed_bonus = snapped(randf_range(BalanceConfig.EQUIPMENT_BOOTS_ASPD_MIN, BalanceConfig.EQUIPMENT_BOOTS_ASPD_MAX * mult), 0.01)
+			equip.defense_bonus = int(BalanceConfig.EQUIPMENT_BOOTS_DEF_BASE * mult)
 		EquipmentData.Type.RING:
 			## 戒指随机为金币/经验加成或攻击/暴击加成
-			if randf() < 0.5:
-				equip.gold_bonus_percent = randf_range(2.0, 8.0 * mult)
-				equip.exp_bonus_percent = randf_range(2.0, 8.0 * mult)
+			if randf() < BalanceConfig.EQUIPMENT_RING_BRANCH_CHANCE:
+				equip.gold_bonus_percent = randf_range(BalanceConfig.EQUIPMENT_RING_GOLD_MIN, BalanceConfig.EQUIPMENT_RING_GOLD_MAX * mult)
+				equip.exp_bonus_percent = randf_range(BalanceConfig.EQUIPMENT_RING_EXP_MIN, BalanceConfig.EQUIPMENT_RING_EXP_MAX * mult)
 			else:
-				equip.attack_bonus = int(2 * mult)
-				equip.crit_rate_bonus = snapped(randf_range(0.01, 0.05 * mult), 0.001)
+				equip.attack_bonus = int(BalanceConfig.EQUIPMENT_RING_ATK_BASE * mult)
+				equip.crit_rate_bonus = snapped(randf_range(BalanceConfig.EQUIPMENT_RING_CRIT_MIN, BalanceConfig.EQUIPMENT_RING_CRIT_MAX * mult), 0.001)
 	
 	## 稀有度越高，额外随机属性越多
 	if equip.rarity >= EquipmentData.Rarity.RARE:
@@ -192,33 +212,33 @@ func _add_random_bonus(equip: EquipmentData, mult: float) -> void:
 	var bonus_type: int = randi() % 7
 	match bonus_type:
 		0:
-			equip.attack_bonus += int(2 * mult)
+			equip.attack_bonus += int(BalanceConfig.EQUIPMENT_RANDOM_BONUS_ATK * mult)
 		1:
-			equip.defense_bonus += int(1 * mult)
+			equip.defense_bonus += int(BalanceConfig.EQUIPMENT_RANDOM_BONUS_DEF * mult)
 		2:
-			equip.max_hp_bonus += int(4 * mult)
+			equip.max_hp_bonus += int(BalanceConfig.EQUIPMENT_RANDOM_BONUS_HP * mult)
 		3:
-			equip.attack_speed_bonus += snapped(randf_range(0.02, 0.1 * mult), 0.01)
+			equip.attack_speed_bonus += snapped(randf_range(BalanceConfig.EQUIPMENT_RANDOM_BONUS_ASPD_MIN, BalanceConfig.EQUIPMENT_RANDOM_BONUS_ASPD_MAX * mult), 0.01)
 		4:
-			equip.crit_rate_bonus += snapped(randf_range(0.01, 0.03 * mult), 0.001)
+			equip.crit_rate_bonus += snapped(randf_range(BalanceConfig.EQUIPMENT_RANDOM_BONUS_CRIT_MIN, BalanceConfig.EQUIPMENT_RANDOM_BONUS_CRIT_MAX * mult), 0.001)
 		5:
-			equip.gold_bonus_percent += randf_range(1.0, 5.0 * mult)
+			equip.gold_bonus_percent += randf_range(BalanceConfig.EQUIPMENT_RANDOM_BONUS_GOLD_MIN, BalanceConfig.EQUIPMENT_RANDOM_BONUS_GOLD_MAX * mult)
 		6:
-			equip.exp_bonus_percent += randf_range(1.0, 5.0 * mult)
+			equip.exp_bonus_percent += randf_range(BalanceConfig.EQUIPMENT_RANDOM_BONUS_EXP_MIN, BalanceConfig.EQUIPMENT_RANDOM_BONUS_EXP_MAX * mult)
 
 func _calculate_score(equip: EquipmentData) -> int:
 	var score: int = 0
-	score += equip.attack_bonus * 4
-	score += equip.defense_bonus * 4
-	score += equip.max_hp_bonus * 1
-	score += int(equip.attack_speed_bonus * 50)
-	score += int(equip.crit_rate_bonus * 200)
-	score += int(equip.gold_bonus_percent * 3)
-	score += int(equip.exp_bonus_percent * 3)
-	score += equip.rarity * 20
+	score += equip.attack_bonus * BalanceConfig.EQUIPMENT_SCORE_WEIGHT_ATK
+	score += equip.defense_bonus * BalanceConfig.EQUIPMENT_SCORE_WEIGHT_DEF
+	score += equip.max_hp_bonus * BalanceConfig.EQUIPMENT_SCORE_WEIGHT_HP
+	score += int(equip.attack_speed_bonus * BalanceConfig.EQUIPMENT_SCORE_WEIGHT_ASPD)
+	score += int(equip.crit_rate_bonus * BalanceConfig.EQUIPMENT_SCORE_WEIGHT_CRIT)
+	score += int(equip.gold_bonus_percent * BalanceConfig.EQUIPMENT_SCORE_WEIGHT_GOLD)
+	score += int(equip.exp_bonus_percent * BalanceConfig.EQUIPMENT_SCORE_WEIGHT_EXP)
+	score += equip.rarity * BalanceConfig.EQUIPMENT_SCORE_RARITY
 	return score
 
 func _calculate_sell_price(equip: EquipmentData) -> int:
-	var base: int = 10 + equip.level * 2
-	var rarity_mult: float = 1.0 + equip.rarity * 0.8
+	var base: int = BalanceConfig.EQUIPMENT_SELL_BASE + equip.level * BalanceConfig.EQUIPMENT_SELL_LEVEL
+	var rarity_mult: float = 1.0 + equip.rarity * BalanceConfig.EQUIPMENT_SELL_RARITY_MULT
 	return int(base * rarity_mult)

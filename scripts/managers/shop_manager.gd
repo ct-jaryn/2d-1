@@ -4,7 +4,9 @@ extends Node
 signal item_purchased(item_id: String, price: int)
 signal purchase_failed(reason: String)
 
-@export var game_manager: GameManager
+@export var player_data: PlayerData
+@export var equipment_manager: EquipmentManager
+@export var stage_manager: StageManager
 
 const ITEMS: Dictionary = {
 	"health_potion": {
@@ -49,9 +51,9 @@ func get_item(id: String) -> Dictionary:
 
 func can_afford(id: String) -> bool:
 	var item: Dictionary = ITEMS.get(id, {})
-	if item.is_empty() or game_manager == null or game_manager.player_data == null:
+	if item.is_empty() or player_data == null:
 		return false
-	return game_manager.player_data.gold >= item.price
+	return player_data.gold >= item.price
 
 func purchase(id: String) -> bool:
 	if not can_afford(id):
@@ -63,25 +65,25 @@ func purchase(id: String) -> bool:
 	
 	match id:
 		"health_potion":
-			if game_manager.player_data.hp >= game_manager.player_data.max_hp:
+			if player_data.hp >= player_data.max_hp:
 				purchase_failed.emit("生命值已满")
 				return false
-			var heal: int = int(game_manager.player_data.max_hp * 0.5)
-			game_manager.player_data.heal(heal)
+			var heal: int = int(player_data.max_hp * 0.5)
+			player_data.heal(heal)
 			EventBus.message_logged.emit("生命药水恢复 %d 点生命" % heal)
 		"attack_boost":
-			if game_manager.player_data.bonus_attack >= BalanceConfig.MAX_BONUS_ATTACK:
+			if player_data.bonus_attack >= BalanceConfig.MAX_BONUS_ATTACK:
 				purchase_failed.emit("攻击卷轴已达购买上限")
 				return false
-			game_manager.player_data.bonus_attack += 2
-			game_manager.player_data.recalc_stats()
+			player_data.bonus_attack += 2
+			player_data.recalc_stats()
 			EventBus.message_logged.emit("攻击卷轴：攻击 +2")
 		"defense_boost":
-			if game_manager.player_data.bonus_defense >= BalanceConfig.MAX_BONUS_DEFENSE:
+			if player_data.bonus_defense >= BalanceConfig.MAX_BONUS_DEFENSE:
 				purchase_failed.emit("防御卷轴已达购买上限")
 				return false
-			game_manager.player_data.bonus_defense += 2
-			game_manager.player_data.recalc_stats()
+			player_data.bonus_defense += 2
+			player_data.recalc_stats()
 			EventBus.message_logged.emit("防御卷轴：防御 +2")
 		"exp_potion":
 			if exp_potion_charges >= BalanceConfig.MAX_EXP_POTION_CHARGES:
@@ -90,11 +92,11 @@ func purchase(id: String) -> bool:
 			exp_potion_charges = min(BalanceConfig.MAX_EXP_POTION_CHARGES, exp_potion_charges + BalanceConfig.EXP_POTION_BUY_AMOUNT)
 			EventBus.message_logged.emit("经验药水生效：剩余 %d 场战斗经验 +%.0f%%" % [exp_potion_charges, (BalanceConfig.EXP_POTION_MULTIPLIER - 1.0) * 100.0])
 		"equipment_box":
-			if game_manager.equipment_manager == null or game_manager.stage_manager == null:
+			if equipment_manager == null or stage_manager == null:
 				purchase_failed.emit("装备系统未初始化")
 				return false
-			var equip: EquipmentData = game_manager.equipment_manager.generate_drop(game_manager.stage_manager.current_enemy_level, false)
-			if game_manager.equipment_manager.add_to_inventory(equip):
+			var equip: EquipmentData = equipment_manager.generate_drop(stage_manager.current_enemy_level, false)
+			if equipment_manager.add_to_inventory(equip):
 				EventBus.message_logged.emit("获得装备：%s" % equip.get_display_name())
 				EventBus.equipment_dropped.emit(equip)
 			else:
@@ -104,8 +106,9 @@ func purchase(id: String) -> bool:
 			purchase_failed.emit("未知商品")
 			return false
 	
-	game_manager.player_data.gold -= price
-	game_manager.player_data.stats_changed.emit()
+	if not player_data.spend_gold(price):
+		purchase_failed.emit("金币不足")
+		return false
 	item_purchased.emit(id, price)
 	return true
 

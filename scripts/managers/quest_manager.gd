@@ -6,11 +6,13 @@ const QuestDataGD = preload("res://scripts/data/quest_data.gd")
 const DAILY_QUEST_COUNT: int = 4
 const REFRESH_COST: int = 100
 
-var quests: Array[QuestData] = []
+var quests: Array[QuestDataGD] = []
 var last_refresh_day: int = -1
 var free_refresh_used: bool = false
 
-@export var game_manager: GameManager
+@export var player_data: PlayerData
+@export var equipment_manager: EquipmentManager
+@export var stage_manager: StageManager
 
 func _ready() -> void:
 	add_to_group("quest_manager")
@@ -42,7 +44,7 @@ func _generate_daily_quests(today: int) -> void:
 	
 	for i: int in range(min(DAILY_QUEST_COUNT, templates.size())):
 		var template: Dictionary = templates[i]
-		var quest: QuestData = QuestDataGD.new(template.id, template.type, template.title, template.description, template.target)
+		var quest: QuestDataGD = QuestDataGD.new(template.id, template.type, template.title, template.description, template.target)
 		quest.reward_gold = template.reward_gold
 		quest.reward_exp = template.reward_exp
 		quest.reward_equipment = template.reward_equipment
@@ -64,7 +66,7 @@ func _get_quest_templates() -> Array[Dictionary]:
 	]
 
 func try_manual_refresh() -> bool:
-	if game_manager == null or game_manager.player_data == null:
+	if player_data == null:
 		return false
 	
 	if not free_refresh_used:
@@ -73,31 +75,29 @@ func try_manual_refresh() -> bool:
 		EventBus.message_logged.emit("免费刷新任务完成")
 		return true
 	
-	if game_manager.player_data.gold < REFRESH_COST:
+	if not player_data.spend_gold(REFRESH_COST):
 		EventBus.message_logged.emit("金币不足，刷新任务需要 %d 金币" % REFRESH_COST)
 		return false
 	
-	game_manager.player_data.gold -= REFRESH_COST
-	game_manager.player_data.stats_changed.emit()
 	_generate_daily_quests(_get_today_index())
 	EventBus.message_logged.emit("消耗 %d 金币刷新任务" % REFRESH_COST)
 	return true
 
-func claim_reward(quest: QuestData) -> bool:
+func claim_reward(quest: QuestDataGD) -> bool:
 	if not quest.completed or quest.claimed:
 		return false
 	
 	quest.claimed = true
 	
-	if game_manager and game_manager.player_data:
+	if player_data != null:
 		if quest.reward_gold > 0:
-			game_manager.player_data.add_gold(quest.reward_gold)
+			player_data.add_gold(quest.reward_gold)
 		if quest.reward_exp > 0:
-			game_manager.player_data.gain_exp(quest.reward_exp)
+			player_data.gain_exp(quest.reward_exp)
 	
-	if quest.reward_equipment and game_manager and game_manager.equipment_manager and game_manager.stage_manager:
-		var equip: EquipmentData = game_manager.equipment_manager.generate_drop(game_manager.stage_manager.current_enemy_level, false)
-		if game_manager.equipment_manager.add_to_inventory(equip):
+	if quest.reward_equipment and equipment_manager != null and stage_manager != null:
+		var equip: EquipmentData = equipment_manager.generate_drop(stage_manager.current_enemy_level, false)
+		if equipment_manager.add_to_inventory(equip):
 			EventBus.equipment_dropped.emit(equip)
 			EventBus.message_logged.emit("任务奖励：%s" % equip.get_display_name())
 		else:
@@ -124,7 +124,7 @@ func _on_skill_casted(_skill: SkillData) -> void:
 
 func _update_quest_progress(type: int, amount: int) -> void:
 	var changed: bool = false
-	for quest: QuestData in quests:
+	for quest: QuestDataGD in quests:
 		if quest.type != type or quest.completed:
 			continue
 		if quest.add_progress(amount):
@@ -138,7 +138,7 @@ func _update_quest_progress(type: int, amount: int) -> void:
 
 func get_completed_count() -> int:
 	var count: int = 0
-	for quest: QuestData in quests:
+	for quest: QuestDataGD in quests:
 		if quest.completed:
 			count += 1
 	return count
@@ -167,7 +167,7 @@ func deserialize(data: Dictionary) -> void:
 		return
 	
 	for q: Dictionary in data.get("quests", []):
-		var quest: QuestData = QuestDataGD.new(q.get("id", ""), q.get("type", 0), q.get("title", ""), q.get("description", ""), q.get("target", 1))
+		var quest: QuestDataGD = QuestDataGD.new(q.get("id", ""), q.get("type", 0), q.get("title", ""), q.get("description", ""), q.get("target", 1))
 		quest.deserialize(q)
 		quests.append(quest)
 	

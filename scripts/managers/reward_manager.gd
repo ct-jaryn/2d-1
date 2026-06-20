@@ -1,10 +1,9 @@
 class_name RewardManager
 extends Node
 
-@export var game_manager: GameManager
 @export var player_data: PlayerData
 @export var equipment_manager: EquipmentManager
-@export var skill_manager: SkillManager
+@export var shop_manager: ShopManager
 @export var stage_manager: StageManager
 
 const OFFLINE_REWARD_RATE_GOLD: float = BalanceConfig.OFFLINE_REWARD_RATE_GOLD
@@ -20,8 +19,7 @@ func _on_enemy_defeated(enemy: EnemyData) -> void:
 		return
 
 	var exp_reward: int = int(enemy.exp_reward * (1.0 + player_data.equip_exp_percent / 100.0))
-	if skill_manager:
-		exp_reward = _apply_exp_bonus(exp_reward)
+	exp_reward = _apply_exp_bonus(exp_reward)
 	var gold_reward: int = int(enemy.gold_reward * (1.0 + player_data.equip_gold_percent / 100.0))
 
 	player_data.gain_exp(exp_reward)
@@ -32,8 +30,7 @@ func _on_enemy_defeated(enemy: EnemyData) -> void:
 	if enemy.is_boss:
 		player_data.bosses_defeated += 1
 
-	if skill_manager:
-		skill_manager.add_energy(10 if enemy.is_boss else 3)
+	EventBus.energy_gained.emit(10 if enemy.is_boss else 3)
 
 	EventBus.play_sfx.emit("coin")
 	EventBus.message_logged.emit("击败了 %s！EXP +%d  Gold +%d" % [enemy.name, exp_reward, gold_reward])
@@ -75,11 +72,11 @@ func apply_offline_rewards(last_save_time: int) -> void:
 	EventBus.message_logged.emit("离线 %s，获得 %d 金币和 %d 经验" % [_format_time(elapsed), gold_reward, exp_reward])
 
 func _apply_exp_bonus(exp: int) -> int:
-	if skill_manager == null:
+	## 经验药水由 ShopManager 管理
+	if shop_manager == null:
 		return exp
-	## 通过 SkillManager 的公开接口判断是否有经验药水
-	if skill_manager.has_method("apply_exp_bonus"):
-		return skill_manager.apply_exp_bonus(exp)
+	if shop_manager.has_method("apply_exp_bonus"):
+		return shop_manager.apply_exp_bonus(exp)
 	return exp
 
 func _format_time(seconds: float) -> String:

@@ -1,7 +1,7 @@
 class_name StageManager
 extends Node
 
-@export var game_manager: GameManager
+@export var player_data: PlayerData
 @export var battle_manager: BattleManager
 @export var background: TextureRect
 
@@ -49,9 +49,8 @@ func challenge_boss() -> bool:
 
 func advance_stage() -> void:
 	current_enemy_level += 1
-	if game_manager and game_manager.player_data:
-		if current_enemy_level > game_manager.player_data.highest_stage:
-			game_manager.player_data.highest_stage = current_enemy_level
+	if player_data != null and current_enemy_level > player_data.highest_stage:
+		player_data.highest_stage = current_enemy_level
 	EventBus.stage_changed.emit(current_enemy_level)
 	spawn_normal_enemy()
 
@@ -61,7 +60,7 @@ func get_stage_display() -> String:
 func _on_enemy_defeated(enemy: EnemyData) -> void:
 	if not enemy.is_boss:
 		await get_tree().create_timer(0.5).timeout
-		if game_manager and game_manager.player_data and game_manager.player_data.is_alive():
+		if player_data != null and player_data.is_alive():
 			spawn_normal_enemy()
 		return
 

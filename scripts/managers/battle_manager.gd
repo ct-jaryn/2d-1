@@ -40,13 +40,13 @@ func _process(delta: float) -> void:
 	player_attack_timer += delta
 	enemy_attack_timer += delta
 
-	var player_interval: float = 1.0 / player_data.attack_speed
-	if player_attack_timer >= player_interval:
+	var player_interval: float = 1.0 / maxf(player_data.attack_speed, 0.001)
+	while player_attack_timer >= player_interval:
 		player_attack_timer -= player_interval
 		_player_attack()
 
-	var enemy_interval: float = 1.0 / enemy_data.attack_speed
-	if enemy_attack_timer >= enemy_interval:
+	var enemy_interval: float = 1.0 / maxf(enemy_data.attack_speed, 0.001)
+	while enemy_attack_timer >= enemy_interval:
 		enemy_attack_timer -= enemy_interval
 		_enemy_attack()
 
@@ -89,6 +89,6 @@ func _enemy_attack() -> void:
 		player_died.emit()
 
 func _shake(amount: float) -> void:
-	var camera = get_viewport().get_camera_2d()
+	var camera: Camera2D = get_viewport().get_camera_2d()
 	if camera and camera.has_method("shake"):
 		camera.shake(amount)

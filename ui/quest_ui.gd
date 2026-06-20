@@ -7,13 +7,14 @@ const CHECK_ICON: Texture2D = preload("res://assets/images/icon_check.png")
 @onready var message_label: Label = $MarginContainer/CenterContainer/PanelContainer/VBoxContainer/MessageLabel
 
 var quest_manager: QuestManager = null
+var _quest_cards: Dictionary = {}
 
 func _ready() -> void:
 	super._ready()
 	refresh_button.pressed.connect(_on_refresh_pressed)
 	if game_manager:
 		quest_manager = game_manager.quest_manager
-	EventBus.daily_quests_refreshed.connect(_refresh)
+	EventBus.daily_quests_refreshed.connect(_rebuild_all)
 	EventBus.quest_updated.connect(_on_quest_updated)
 
 func show_quests() -> void:
@@ -28,92 +29,155 @@ func _on_back_pressed() -> void:
 	if battle_ui:
 		battle_ui.show_battle.call_deferred()
 
-func _refresh() -> void:
+func show_panel() -> void:
+	super.show_panel()
+	_rebuild_all()
+
+func _rebuild_all() -> void:
 	_clear_list()
+	_quest_cards.clear()
 	if quest_manager == null:
 		return
 	
 	_update_refresh_button()
 	
 	for quest: QuestData in quest_manager.quests:
-		var card: PanelContainer = PanelContainer.new()
-		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		
-		var style: StyleBoxFlat = StyleBoxFlat.new()
-		if quest.claimed:
-			style.bg_color = Color(0.15, 0.25, 0.15, 0.95)
-			style.border_color = Color(0.4, 0.7, 0.4, 1)
-		elif quest.completed:
-			style.bg_color = Color(0.25, 0.2, 0.1, 0.95)
-			style.border_color = Color(1.0, 0.75, 0.2, 1)
-		else:
-			style.bg_color = Color(0.12, 0.12, 0.16, 0.95)
-			style.border_color = Color(0.35, 0.32, 0.45, 1)
-		style.border_width_left = 2
-		style.border_width_top = 2
-		style.border_width_right = 2
-		style.border_width_bottom = 2
-		style.corner_radius_top_left = 8
-		style.corner_radius_top_right = 8
-		style.corner_radius_bottom_right = 8
-		style.corner_radius_bottom_left = 8
-		style.content_margin_left = 10
-		style.content_margin_top = 8
-		style.content_margin_right = 10
-		style.content_margin_bottom = 8
-		card.add_theme_stylebox_override("panel", style)
-		
-		var hbox: HBoxContainer = HBoxContainer.new()
-		hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		hbox.add_theme_constant_override("separation", 12)
-		
-		var info: VBoxContainer = VBoxContainer.new()
-		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		
-		var title_row: HBoxContainer = HBoxContainer.new()
-		title_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		
-		var title: Label = Label.new()
-		title.text = quest.title
-		title.add_theme_font_size_override("font_size", 18)
-		if quest.completed:
-			title.add_theme_color_override("font_color", Color.GOLD)
-		
-		var progress: Label = Label.new()
-		progress.text = quest.get_progress_text()
-		progress.add_theme_font_size_override("font_size", 14)
-		progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		
-		title_row.add_child(title)
-		title_row.add_child(progress)
-		
-		var desc: Label = Label.new()
-		desc.text = quest.description
-		desc.add_theme_font_size_override("font_size", 14)
-		desc.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85, 1))
-		
-		var reward: Label = Label.new()
-		reward.text = "奖励：%s" % quest.get_reward_text()
-		reward.add_theme_font_size_override("font_size", 13)
-		reward.add_theme_color_override("font_color", Color.LIME_GREEN)
-		
-		var progress_bar: ProgressBar = ProgressBar.new()
-		progress_bar.value = quest.get_progress_ratio() * 100.0
-		progress_bar.max_value = 100.0
-		progress_bar.size_flags_vertical = 4
-		_set_quest_bar_colors(progress_bar)
-		
-		info.add_child(title_row)
-		info.add_child(desc)
-		info.add_child(progress_bar)
-		info.add_child(reward)
-		
-		var action: Control = _create_action_control(quest)
-		
-		hbox.add_child(info)
-		hbox.add_child(action)
-		card.add_child(hbox)
+		var card: PanelContainer = _build_card(quest)
 		quest_list.add_child(card)
+		_quest_cards[quest] = card
+
+func _build_card(quest: QuestData) -> PanelContainer:
+	var card: PanelContainer = PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	
+	var style: StyleBoxFlat = StyleBoxFlat.new()
+	_set_card_style(style, quest)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_right = 8
+	style.corner_radius_bottom_left = 8
+	style.content_margin_left = 10
+	style.content_margin_top = 8
+	style.content_margin_right = 10
+	style.content_margin_bottom = 8
+	card.add_theme_stylebox_override("panel", style)
+	
+	var hbox: HBoxContainer = HBoxContainer.new()
+	hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_theme_constant_override("separation", 12)
+	
+	var info: VBoxContainer = VBoxContainer.new()
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	
+	var title_row: HBoxContainer = HBoxContainer.new()
+	title_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	
+	var title: Label = Label.new()
+	title.name = "TitleLabel"
+	title.text = quest.title
+	title.add_theme_font_size_override("font_size", 18)
+	
+	var progress: Label = Label.new()
+	progress.name = "ProgressLabel"
+	progress.text = quest.get_progress_text()
+	progress.add_theme_font_size_override("font_size", 14)
+	progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	
+	title_row.add_child(title)
+	title_row.add_child(progress)
+	
+	var desc: Label = Label.new()
+	desc.name = "DescLabel"
+	desc.text = quest.description
+	desc.add_theme_font_size_override("font_size", 14)
+	desc.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85, 1))
+	
+	var reward: Label = Label.new()
+	reward.name = "RewardLabel"
+	reward.text = "奖励：%s" % quest.get_reward_text()
+	reward.add_theme_font_size_override("font_size", 13)
+	reward.add_theme_color_override("font_color", Color.LIME_GREEN)
+	
+	var progress_bar: ProgressBar = ProgressBar.new()
+	progress_bar.name = "ProgressBar"
+	progress_bar.value = quest.get_progress_ratio() * 100.0
+	progress_bar.max_value = 100.0
+	progress_bar.size_flags_vertical = 4
+	_set_quest_bar_colors(progress_bar)
+	
+	info.add_child(title_row)
+	info.add_child(desc)
+	info.add_child(progress_bar)
+	info.add_child(reward)
+	
+	var action: Control = _create_action_control(quest)
+	action.name = "ActionControl"
+	
+	hbox.add_child(info)
+	hbox.add_child(action)
+	card.add_child(hbox)
+	return card
+
+func _set_card_style(style: StyleBoxFlat, quest: QuestData) -> void:
+	if quest.claimed:
+		style.bg_color = Color(0.15, 0.25, 0.15, 0.95)
+		style.border_color = Color(0.4, 0.7, 0.4, 1)
+	elif quest.completed:
+		style.bg_color = Color(0.25, 0.2, 0.1, 0.95)
+		style.border_color = Color(1.0, 0.75, 0.2, 1)
+	else:
+		style.bg_color = Color(0.12, 0.12, 0.16, 0.95)
+		style.border_color = Color(0.35, 0.32, 0.45, 1)
+
+func _update_card(quest: QuestData) -> void:
+	var card: PanelContainer = _quest_cards.get(quest) as PanelContainer
+	if card == null:
+		return
+	
+	var style: StyleBoxFlat = StyleBoxFlat.new()
+	_set_card_style(style, quest)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_right = 8
+	style.corner_radius_bottom_left = 8
+	style.content_margin_left = 10
+	style.content_margin_top = 8
+	style.content_margin_right = 10
+	style.content_margin_bottom = 8
+	card.add_theme_stylebox_override("panel", style)
+	
+	var hbox: HBoxContainer = card.get_child(0) as HBoxContainer
+	var info: VBoxContainer = hbox.get_child(0) as VBoxContainer
+	var title_row: HBoxContainer = info.get_child(0) as HBoxContainer
+	var title: Label = title_row.get_node("TitleLabel") as Label
+	var progress_label: Label = title_row.get_node("ProgressLabel") as Label
+	var reward: Label = info.get_node("RewardLabel") as Label
+	var progress_bar: ProgressBar = info.get_node("ProgressBar") as ProgressBar
+	var action: Control = hbox.get_node("ActionControl") as Control
+	
+	title.text = quest.title
+	if quest.completed:
+		title.add_theme_color_override("font_color", Color.GOLD)
+	else:
+		title.remove_theme_color_override("font_color")
+	progress_label.text = quest.get_progress_text()
+	reward.text = "奖励：%s" % quest.get_reward_text()
+	progress_bar.value = quest.get_progress_ratio() * 100.0
+	
+	## 替换 action 区域
+	action.queue_free()
+	var new_action: Control = _create_action_control(quest)
+	new_action.name = "ActionControl"
+	hbox.add_child(new_action)
+	hbox.move_child(new_action, 1)
 
 func _set_quest_bar_colors(bar: ProgressBar) -> void:
 	var fg: StyleBoxFlat = bar.get_theme_stylebox("fill").duplicate()
@@ -156,16 +220,17 @@ func _clear_list() -> void:
 	for child: Node in quest_list.get_children():
 		child.queue_free()
 
-func _on_quest_updated(_quest: QuestData) -> void:
+func _on_quest_updated(quest: QuestData) -> void:
 	if visible:
-		_refresh()
+		_update_card(quest)
+		_update_refresh_button()
 
 func _on_refresh_pressed() -> void:
 	_play_ui_click()
 	if quest_manager == null:
 		return
 	if quest_manager.try_manual_refresh():
-		_refresh()
+		_rebuild_all()
 	else:
 		_show_message("刷新失败")
 
@@ -175,7 +240,7 @@ func _on_claim_pressed(quest: QuestData) -> void:
 		return
 	if quest_manager.claim_reward(quest):
 		_show_message("领取成功！")
-		_refresh()
+		_update_card(quest)
 
 func _update_refresh_button() -> void:
 	if quest_manager == null:

@@ -2,6 +2,8 @@ class_name SaveManager
 extends Node
 
 const SAVE_PATH: String = "user://savegame.json"
+const TEMP_PATH: String = "user://savegame.json.tmp"
+const BACKUP_PATH: String = "user://savegame.json.bak"
 const CURRENT_VERSION: int = BalanceConfig.SAVE_VERSION
 
 signal save_completed
@@ -15,7 +17,7 @@ func has_save() -> bool:
 func get_last_save_time() -> int:
 	return _last_save_time
 
-func save_game(player_data: PlayerData, equipment_manager: EquipmentManager, current_stage: int, achievement_manager: Node = null, quest_manager: Node = null, game_manager: GameManager = null) -> bool:
+func save_game(player_data: PlayerData, equipment_manager: EquipmentManager, current_stage: int, achievement_manager: AchievementManager = null, quest_manager: Node = null, game_manager: GameManager = null) -> bool:
 	if player_data == null or equipment_manager == null:
 		return false
 
@@ -35,7 +37,7 @@ func save_game(player_data: PlayerData, equipment_manager: EquipmentManager, cur
 
 	var skill_data: Dictionary = {
 		"energy": skill_manager.energy if skill_manager else 0,
-		"cooldowns": skill_manager.cooldowns.duplicate() if skill_manager else {},
+		"cooldowns": skill_manager.get_cooldowns().duplicate() if skill_manager else {},
 		"berserk_timer": skill_manager.berserk_timer if skill_manager else 0.0,
 		"berserk_multiplier": skill_manager.berserk_multiplier if skill_manager else 1.0
 	}
@@ -66,22 +68,34 @@ func save_game(player_data: PlayerData, equipment_manager: EquipmentManager, cur
 			"play_time_seconds": player_data.play_time_seconds
 		},
 		"stage": current_stage,
-		"equipped": _serialize_equipment_dict(equipment_manager.equipped),
+		"equipped": _serialize_equipment_dict(equipment_manager.get_equipped_dict()),
 		"inventory": _serialize_equipment_array(equipment_manager.inventory),
 		"skill": skill_data,
 		"shop": shop_data
 	}
 
-	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	## 原子写入：先写临时文件，再重命名为正式存档；成功后保留一份备份
+	var file: FileAccess = FileAccess.open(TEMP_PATH, FileAccess.WRITE)
 	if file == null:
-		push_error("无法打开存档文件，错误码：%d" % FileAccess.get_open_error())
+		push_error("无法打开存档临时文件，错误码：%d" % FileAccess.get_open_error())
 		return false
 	file.store_string(JSON.stringify(data))
 	file.close()
+	
+	if FileAccess.file_exists(SAVE_PATH):
+		var dir: DirAccess = DirAccess.open("user://")
+		if dir != null:
+			dir.copy(SAVE_PATH, BACKUP_PATH)
+	
+	var dir: DirAccess = DirAccess.open("user://")
+	if dir == null or dir.rename(TEMP_PATH, SAVE_PATH) != OK:
+		push_error("存档重命名失败")
+		return false
+	
 	save_completed.emit()
 	return true
 
-func load_game(player_data: PlayerData, equipment_manager: EquipmentManager, game_manager: GameManager, achievement_manager: Node = null, quest_manager: Node = null) -> bool:
+func load_game(player_data: PlayerData, equipment_manager: EquipmentManager, game_manager: GameManager, achievement_manager: AchievementManager = null, quest_manager: Node = null) -> bool:
 	if not has_save():
 		return false
 
@@ -99,10 +113,15 @@ func load_game(player_data: PlayerData, equipment_manager: EquipmentManager, gam
 
 	var data: Dictionary = json.data
 	if not data.has("version"):
+		push_error("存档缺少版本字段")
 		return false
-	if data.get("version", 0) > CURRENT_VERSION:
-		push_error("存档版本 %d 高于当前支持版本 %d，无法加载" % [data.get("version", 0), CURRENT_VERSION])
+	var save_version: int = data.get("version", 0)
+	if save_version > CURRENT_VERSION:
+		push_error("存档版本 %d 高于当前支持版本 %d，无法加载" % [save_version, CURRENT_VERSION])
 		return false
+	
+	## 版本迁移
+	data = _migrate_data(data, save_version)
 
 	_last_save_time = data.get("timestamp", 0)
 
@@ -127,22 +146,22 @@ func load_game(player_data: PlayerData, equipment_manager: EquipmentManager, gam
 	if game_manager != null and game_manager.stage_manager != null:
 		game_manager.stage_manager.current_enemy_level = data.get("stage", 1)
 
-	## 清空当前装备数据
-	equipment_manager.equipped.clear()
-	equipment_manager.inventory.clear()
-
 	var equipped_data: Dictionary = data.get("equipped", {})
+	var loaded_equipped: Dictionary = {}
 	for type_str: String in equipped_data.keys():
 		var type: int = int(type_str)
 		var equip: EquipmentData = _deserialize_equipment(equipped_data[type_str])
 		if equip != null:
-			equipment_manager.equipped[type] = equip
+			loaded_equipped[type] = equip
 
 	var inventory_data: Array = data.get("inventory", [])
+	var loaded_inventory: Array[EquipmentData] = []
 	for item: Dictionary in inventory_data:
 		var equip: EquipmentData = _deserialize_equipment(item)
 		if equip != null:
-			equipment_manager.inventory.append(equip)
+			loaded_inventory.append(equip)
+	
+	equipment_manager.load_equipment(loaded_equipped, loaded_inventory)
 
 	## 读取技能状态（v3 新增，旧存档兼容）
 	if game_manager != null and game_manager.skill_manager != null:
@@ -151,10 +170,10 @@ func load_game(player_data: PlayerData, equipment_manager: EquipmentManager, gam
 		sm.energy = skill_data.get("energy", 0)
 		sm.berserk_timer = skill_data.get("berserk_timer", 0.0)
 		sm.berserk_multiplier = skill_data.get("berserk_multiplier", 1.0)
+		if player_data != null:
+			player_data.attack_speed_multiplier = sm.berserk_multiplier
 		var raw_cooldowns: Dictionary = skill_data.get("cooldowns", {})
-		sm.cooldowns.clear()
-		for type_str: String in raw_cooldowns.keys():
-			sm.cooldowns[int(type_str)] = float(raw_cooldowns[type_str])
+		sm.set_cooldowns(raw_cooldowns)
 
 	## 读取商店状态（v3 新增，旧存档兼容）
 	if game_manager != null and game_manager.shop_manager != null:
@@ -208,18 +227,39 @@ func _serialize_equipment(equip: EquipmentData) -> Dictionary:
 		"exp_percent": equip.exp_bonus_percent
 	}
 
+func _migrate_data(data: Dictionary, from_version: int) -> Dictionary:
+	## 按版本链式迁移，未来新增版本在这里追加
+	while from_version < CURRENT_VERSION:
+		from_version += 1
+		match from_version:
+			_:
+				pass  ## 当前无字段重命名，保留占位
+	data["version"] = CURRENT_VERSION
+	return data
+
+func _clamp_int(value: Variant, min_value: int, max_value: int, default: int) -> int:
+	if value == null or typeof(value) != TYPE_INT and typeof(value) != TYPE_FLOAT:
+		return default
+	return clampi(int(value), min_value, max_value)
+
 func _deserialize_equipment(data: Dictionary) -> EquipmentData:
+	var type_count: int = EquipmentData.Type.size()
+	var rarity_count: int = EquipmentData.Rarity.size()
+	var type: int = _clamp_int(data.get("type", EquipmentData.Type.WEAPON), 0, type_count - 1, EquipmentData.Type.WEAPON)
+	var rarity: int = _clamp_int(data.get("rarity", EquipmentData.Rarity.COMMON), 0, rarity_count - 1, EquipmentData.Rarity.COMMON)
+	var level: int = maxi(1, _clamp_int(data.get("level", 1), 0, 999999, 1))
+	
 	var equip: EquipmentData = EquipmentData.new(
 		data.get("name", ""),
-		data.get("type", EquipmentData.Type.WEAPON),
-		data.get("rarity", EquipmentData.Rarity.COMMON),
-		data.get("level", 1)
+		type,
+		rarity,
+		level
 	)
-	equip.attack_bonus = data.get("attack", 0)
-	equip.defense_bonus = data.get("defense", 0)
-	equip.max_hp_bonus = data.get("max_hp", 0)
-	equip.attack_speed_bonus = data.get("attack_speed", 0.0)
-	equip.crit_rate_bonus = data.get("crit_rate", 0.0)
-	equip.gold_bonus_percent = data.get("gold_percent", 0.0)
-	equip.exp_bonus_percent = data.get("exp_percent", 0.0)
+	equip.attack_bonus = maxi(0, _clamp_int(data.get("attack", 0), -999999, 999999, 0))
+	equip.defense_bonus = maxi(0, _clamp_int(data.get("defense", 0), -999999, 999999, 0))
+	equip.max_hp_bonus = maxi(0, _clamp_int(data.get("max_hp", 0), -999999, 999999, 0))
+	equip.attack_speed_bonus = maxf(0.0, data.get("attack_speed", 0.0))
+	equip.crit_rate_bonus = maxf(0.0, data.get("crit_rate", 0.0))
+	equip.gold_bonus_percent = maxf(0.0, data.get("gold_percent", 0.0))
+	equip.exp_bonus_percent = maxf(0.0, data.get("exp_percent", 0.0))
 	return equip

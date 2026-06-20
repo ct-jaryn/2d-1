@@ -6,7 +6,7 @@ extends Node
 @export var equipment_manager: EquipmentManager
 @export var skill_manager: SkillManager
 @export var shop_manager: ShopManager
-@export var achievement_manager: Node
+@export var achievement_manager: AchievementManager
 @export var stage_manager: StageManager
 @export var reward_manager: RewardManager
 @export var quest_manager: QuestManager
@@ -29,7 +29,6 @@ func _ready() -> void:
 func _init_subsystems() -> void:
 	if player_data == null:
 		player_data = PlayerData.new()
-	player_data.game_manager = self
 
 	battle_manager = _ensure_manager(battle_manager, BattleManager)
 	equipment_manager = _ensure_manager(equipment_manager, EquipmentManager)
@@ -46,24 +45,25 @@ func _init_subsystems() -> void:
 
 	skill_manager.player_data = player_data
 	skill_manager.battle_manager = battle_manager
-	skill_manager.game_manager = self
 
-	shop_manager.game_manager = self
+	shop_manager.player_data = player_data
+	shop_manager.equipment_manager = equipment_manager
+	shop_manager.stage_manager = stage_manager
 
-	reward_manager.game_manager = self
 	reward_manager.player_data = player_data
 	reward_manager.equipment_manager = equipment_manager
-	reward_manager.skill_manager = skill_manager
+	reward_manager.shop_manager = shop_manager
 	reward_manager.stage_manager = stage_manager
 
 	achievement_manager.player_data = player_data
-	achievement_manager.game_manager = self
 
-	stage_manager.game_manager = self
+	stage_manager.player_data = player_data
 	stage_manager.battle_manager = battle_manager
 	stage_manager.background = background
 
-	quest_manager.game_manager = self
+	quest_manager.player_data = player_data
+	quest_manager.equipment_manager = equipment_manager
+	quest_manager.stage_manager = stage_manager
 
 	save_manager = SaveManager.new()
 
@@ -141,6 +141,9 @@ func _on_player_died() -> void:
 		battle_manager.player_attack_timer = 0.0
 		battle_manager.enemy_attack_timer = 0.0
 	stage_manager.spawn_normal_enemy()
+	var player_node = get_tree().get_first_node_in_group("player") as Node2D
+	if player_node and player_node.has_method("revive"):
+		player_node.revive()
 
 func _on_boss_healed(amount: int) -> void:
 	EventBus.message_logged.emit("Boss 恢复了 %d 点生命！" % amount)

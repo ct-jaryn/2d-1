@@ -29,6 +29,11 @@ var equipment_manager: EquipmentManager = null
 var selected_equipment: EquipmentData = null
 var selected_is_equipped: bool = false
 
+## 增量刷新缓存
+var _equipped_buttons: Dictionary = {}
+var _inventory_buttons: Dictionary = {}
+var _layout_dirty: bool = true
+
 func _ready() -> void:
 	super._ready()
 	if game_manager:
@@ -64,8 +69,12 @@ func _on_back_pressed() -> void:
 
 func _apply_responsive_layout() -> void:
 	var width: int = DisplayServer.window_get_size().x
-	wide_content.visible = width >= RESPONSIVE_WIDTH_THRESHOLD
-	narrow_content.visible = width < RESPONSIVE_WIDTH_THRESHOLD
+	var is_wide: bool = width >= RESPONSIVE_WIDTH_THRESHOLD
+	if is_wide != wide_content.visible and (wide_content.visible or narrow_content.visible):
+		## 宽窄布局切换时强制重建
+		_layout_dirty = true
+	wide_content.visible = is_wide
+	narrow_content.visible = not is_wide
 	_refresh()
 
 func _get_equipped_list() -> VBoxContainer:
@@ -81,49 +90,111 @@ func _refresh() -> void:
 	_refresh_inventory()
 	_update_top_bar()
 	_clear_detail()
+	_layout_dirty = false
 
 func _refresh_equipped() -> void:
 	var list: VBoxContainer = _get_equipped_list()
-	for child: Node in list.get_children():
-		child.queue_free()
+	if _layout_dirty:
+		_clear_container(list)
+		_equipped_buttons.clear()
 
 	for type: int in range(EquipmentData.Type.size()):
-		var btn: Button = Button.new()
-		btn.custom_minimum_size = Vector2(0, 56)
-		btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		btn.icon = EQUIPMENT_ICONS[type]
-		btn.expand_icon = true
-		btn.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		if equipment_manager.equipped.has(type):
-			var equip: EquipmentData = equipment_manager.equipped[type]
-			btn.text = "%s\nLv.%d %s" % [equip.equip_name, equip.level, EquipmentData.TYPE_NAMES[type]]
-			btn.add_theme_color_override("font_color", equip.get_rarity_color())
-			btn.pressed.connect(_select_equipment.bind(equip, true))
+		var current: EquipmentData = equipment_manager.equipped.get(type, null) as EquipmentData
+		var cached_equip: EquipmentData = null
+		if _equipped_buttons.has(type):
+			cached_equip = _equipped_buttons[type].get_meta("equipment", null) as EquipmentData
+		
+		if current == cached_equip and _equipped_buttons.has(type):
+			## 同一装备对象，但等级/属性可能变化，更新文本
+			var btn: Button = _equipped_buttons[type]
+			if current != null:
+				btn.text = "%s\nLv.%d %s" % [current.equip_name, current.level, EquipmentData.TYPE_NAMES[type]]
+				btn.add_theme_color_override("font_color", current.get_rarity_color())
+			continue
+		
+		## 移除旧按钮
+		if _equipped_buttons.has(type):
+			_equipped_buttons[type].queue_free()
+			_equipped_buttons.erase(type)
+		
+		var new_btn: Button = Button.new()
+		new_btn.custom_minimum_size = Vector2(0, 56)
+		new_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		new_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		new_btn.icon = EQUIPMENT_ICONS[type]
+		new_btn.expand_icon = true
+		new_btn.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		new_btn.set_meta("equipment", current)
+		if current != null:
+			new_btn.text = "%s\nLv.%d %s" % [current.equip_name, current.level, EquipmentData.TYPE_NAMES[type]]
+			new_btn.add_theme_color_override("font_color", current.get_rarity_color())
+			new_btn.pressed.connect(_select_equipment.bind(current, true))
 		else:
-			btn.text = "未装备\n%s" % EquipmentData.TYPE_NAMES[type]
-			btn.disabled = true
-			btn.add_theme_color_override("font_color", Color.GRAY)
-		_add_button_interactions(btn)
-		list.add_child(btn)
+			new_btn.text = "未装备\n%s" % EquipmentData.TYPE_NAMES[type]
+			new_btn.disabled = true
+			new_btn.add_theme_color_override("font_color", Color.GRAY)
+		_add_button_interactions(new_btn)
+		list.add_child(new_btn)
+		_equipped_buttons[type] = new_btn
 
 func _refresh_inventory() -> void:
 	var grid: GridContainer = _get_inventory_grid()
-	for child: Node in grid.get_children():
-		child.queue_free()
+	if _layout_dirty:
+		_clear_container(grid)
+		_inventory_buttons.clear()
 
 	var btn_size: int = 120 if wide_content.visible else 96
-	for equip: EquipmentData in equipment_manager.inventory:
-		var btn: Button = Button.new()
-		btn.custom_minimum_size = Vector2(btn_size, btn_size * 0.6)
-		btn.icon = EQUIPMENT_ICONS.get(equip.type, null)
-		btn.expand_icon = true
-		btn.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		btn.text = "%s\nLv.%d" % [equip.equip_name, equip.level]
-		btn.add_theme_color_override("font_color", equip.get_rarity_color())
-		btn.pressed.connect(_select_equipment.bind(equip, false))
-		_add_button_interactions(btn)
-		grid.add_child(btn)
+	var new_inventory: Array[EquipmentData] = equipment_manager.inventory.duplicate()
+	
+	## 移除已不在背包中的按钮
+	var to_remove: Array[EquipmentData] = []
+	for equip: EquipmentData in _inventory_buttons.keys():
+		if not equip in new_inventory:
+			_inventory_buttons[equip].queue_free()
+			to_remove.append(equip)
+	for equip: EquipmentData in to_remove:
+		_inventory_buttons.erase(equip)
+	
+	## 按当前 inventory 顺序重建/调整子节点
+	var existing_children: Array[Node] = grid.get_children()
+	for i: int in range(new_inventory.size()):
+		var equip: EquipmentData = new_inventory[i]
+		var btn: Button = null
+		if _inventory_buttons.has(equip):
+			btn = _inventory_buttons[equip]
+			## 更新文本（等级可能变化）
+			btn.text = "%s\nLv.%d" % [equip.equip_name, equip.level]
+			btn.add_theme_color_override("font_color", equip.get_rarity_color())
+		else:
+			btn = _create_inventory_button(equip, btn_size)
+			_inventory_buttons[equip] = btn
+		
+		## 确保顺序正确
+		if i >= existing_children.size() or existing_children[i] != btn:
+			grid.move_child(btn, i)
+	
+	## 移除多余的旧子节点（理论上已被 to_remove 处理，保险起见）
+	while grid.get_child_count() > new_inventory.size():
+		var last: Node = grid.get_child(grid.get_child_count() - 1)
+		if not last.is_queued_for_deletion():
+			last.queue_free()
+
+func _create_inventory_button(equip: EquipmentData, btn_size: int) -> Button:
+	var btn: Button = Button.new()
+	btn.custom_minimum_size = Vector2(btn_size, btn_size * 0.6)
+	btn.icon = EQUIPMENT_ICONS.get(equip.type, null)
+	btn.expand_icon = true
+	btn.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	btn.text = "%s\nLv.%d" % [equip.equip_name, equip.level]
+	btn.add_theme_color_override("font_color", equip.get_rarity_color())
+	btn.pressed.connect(_select_equipment.bind(equip, false))
+	_add_button_interactions(btn)
+	_get_inventory_grid().add_child(btn)
+	return btn
+
+func _clear_container(container: Control) -> void:
+	for child: Node in container.get_children():
+		child.queue_free()
 
 func _add_button_interactions(btn: Button) -> void:
 	btn.mouse_entered.connect(func() -> void:
@@ -176,12 +247,10 @@ func _on_upgrade_pressed() -> void:
 	if selected_equipment == null or game_manager == null or game_manager.player_data == null:
 		return
 	var cost: int = selected_equipment.get_upgrade_cost()
-	if game_manager.player_data.gold < cost:
+	if not game_manager.player_data.spend_gold(cost):
 		EventBus.message_logged.emit("金币不足，无法强化")
 		return
-	game_manager.player_data.gold -= cost
 	selected_equipment.upgrade()
-	game_manager.player_data.stats_changed.emit()
 	if equipment_manager:
 		equipment_manager.equipment_changed.emit()
 	EventBus.message_logged.emit("强化成功！%s 提升至 Lv.%d" % [selected_equipment.equip_name, selected_equipment.level])
@@ -194,22 +263,27 @@ func _on_equip_pressed() -> void:
 	EventBus.play_sfx.emit("ui_click")
 	if selected_equipment == null or equipment_manager == null:
 		return
-	equipment_manager.equip_item(selected_equipment)
+	if not equipment_manager.equip_item(selected_equipment):
+		EventBus.message_logged.emit("背包已满，无法替换装备")
 
 func _on_unequip_pressed() -> void:
 	EventBus.play_sfx.emit("ui_click")
 	if selected_equipment == null or equipment_manager == null:
 		return
-	equipment_manager.unequip_item(selected_equipment.type)
+	var result: EquipmentManager.UnequipResult = equipment_manager.unequip_item(selected_equipment.type)
+	if result == EquipmentManager.UnequipResult.INVENTORY_FULL:
+		EventBus.message_logged.emit("背包已满，无法卸下装备")
 
 func _on_sell_pressed() -> void:
 	EventBus.play_sfx.emit("ui_click")
 	if selected_equipment == null or equipment_manager == null or game_manager == null:
 		return
-	var price: int = equipment_manager.sell_item(selected_equipment)
-	if price > 0:
-		game_manager.player_data.add_gold(price)
-		EventBus.message_logged.emit("出售获得 %d 金币" % price)
+	var result: Dictionary = equipment_manager.sell_item(selected_equipment)
+	if result.ok:
+		game_manager.player_data.add_gold(result.price)
+		EventBus.message_logged.emit("出售获得 %d 金币" % result.price)
+	else:
+		EventBus.message_logged.emit("出售失败：%s" % result.reason)
 
 func _on_auto_equip_pressed() -> void:
 	EventBus.play_sfx.emit("ui_click")

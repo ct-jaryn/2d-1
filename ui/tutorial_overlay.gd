@@ -30,7 +30,13 @@ func _show_step() -> void:
 	label.text = step.get("text", "")
 	
 	var target_path: String = step.get("target", "")
-	var target: Control = get_node_or_null(target_path) as Control
+	var target: Control = null
+	if target_path != "":
+		## TutorialOverlay 被添加到 BattleUI 下，目标节点在 BattleUI 内部，所以从父节点查找
+		if get_parent() != null:
+			target = get_parent().get_node_or_null(target_path) as Control
+		if target == null:
+			target = get_node_or_null(target_path) as Control
 	if target:
 		highlight.visible = true
 		var rect: Rect2 = target.get_global_rect()

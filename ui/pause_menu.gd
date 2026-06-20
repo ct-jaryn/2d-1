@@ -11,6 +11,8 @@ extends CanvasLayer
 
 func _ready() -> void:
 	visible = false
+	## 暂停菜单需要在树暂停时继续处理输入和 UI 交互
+	process_mode = Node.PROCESS_MODE_WHEN_PAUSED
 	if OS.has_feature("web"):
 		quit_button.visible = false
 
@@ -37,6 +39,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			for sub_ui: CanvasLayer in get_tree().get_nodes_in_group("sub_ui"):
 				if sub_ui.visible:
 					get_viewport().set_input_as_handled()
+					if sub_ui.has_method("close_panel"):
+						sub_ui.close_panel()
 					return
 		if visible:
 			_resume()

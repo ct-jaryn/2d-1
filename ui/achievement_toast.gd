@@ -13,6 +13,8 @@ const ANIM_DURATION: float = 0.4
 const DISPLAY_DURATION: float = 2.5
 
 var _tween: Tween = null
+var _queue: Array[AchievementData] = []
+var _is_showing: bool = false
 
 func _ready() -> void:
 	visible = false
@@ -27,6 +29,17 @@ func _ready() -> void:
 	title_label.get_parent().move_child(icon, title_label.get_index())
 
 func show_achievement(achievement: AchievementData) -> void:
+	_queue.append(achievement)
+	if not _is_showing:
+		_process_queue()
+
+func _process_queue() -> void:
+	if _queue.is_empty():
+		_is_showing = false
+		visible = false
+		return
+	_is_showing = true
+	var achievement: AchievementData = _queue.pop_front()
 	title_label.text = "成就解锁"
 	name_label.text = achievement.name
 	reward_label.text = achievement.get_reward_text()
@@ -42,7 +55,7 @@ func show_achievement(achievement: AchievementData) -> void:
 	_tween.tween_property(panel, "position:y", SHOW_Y, ANIM_DURATION)
 	_tween.tween_interval(DISPLAY_DURATION)
 	_tween.tween_property(panel, "modulate", Color(1, 1, 1, 0), 0.3)
-	_tween.tween_callback(_hide)
+	_tween.tween_callback(_process_queue)
 
 func _hide() -> void:
 	visible = false

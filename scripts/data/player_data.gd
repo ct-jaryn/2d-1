@@ -10,7 +10,7 @@ var exp_to_next: int = 100
 var base_max_hp: int = 100
 var base_attack: int = 10
 var base_defense: int = 5
-var base_attack_speed: float = 1.0  ## 每秒攻击次数
+var base_attack_speed: float = BalanceConfig.BASE_ATTACK_SPEED  ## 每秒攻击次数
 var base_crit_rate: float = 0.05
 var crit_damage: float = 1.5
 
@@ -34,7 +34,8 @@ var equip_exp_percent: float = 0.0
 var bonus_attack: int = 0
 var bonus_defense: int = 0
 
-var game_manager: GameManager = null
+## 运行时攻速倍率（由 SkillManager 注入，避免 PlayerData 反向引用 GameManager）
+var attack_speed_multiplier: float = 1.0
 
 var gold: int = 0
 var total_kills: int = 0
@@ -66,11 +67,8 @@ func _apply_equipment_bonuses(emit_signal: bool = true) -> void:
 	max_hp = base_max_hp + equip_max_hp_bonus
 	attack = base_attack + equip_attack_bonus + bonus_attack
 	defense = base_defense + equip_defense_bonus + bonus_defense
-	var speed_mult: float = 1.0
-	if game_manager and game_manager.skill_manager:
-		speed_mult = game_manager.skill_manager.get_attack_speed_multiplier()
-	attack_speed = clamp((base_attack_speed + equip_attack_speed_bonus) * speed_mult, 0.1, BalanceConfig.MAX_ATTACK_SPEED)
-	crit_rate = base_crit_rate + equip_crit_rate_bonus
+	attack_speed = clamp((base_attack_speed + equip_attack_speed_bonus) * attack_speed_multiplier, 0.1, BalanceConfig.MAX_ATTACK_SPEED)
+	crit_rate = clamp(base_crit_rate + equip_crit_rate_bonus, 0.0, 1.0)
 	hp = min(hp, max_hp)
 	if emit_signal:
 		stats_changed.emit()
@@ -127,6 +125,17 @@ func get_attack_damage() -> Dictionary:
 
 func add_gold(amount: int) -> void:
 	gold += amount
-	total_gold_earned += amount
+	if amount > 0:
+		total_gold_earned += amount
 	EventBus.gold_changed.emit(amount)
 	stats_changed.emit()
+
+func spend_gold(amount: int) -> bool:
+	if amount <= 0:
+		return true
+	if gold < amount:
+		return false
+	gold -= amount
+	EventBus.gold_changed.emit(-amount)
+	stats_changed.emit()
+	return true

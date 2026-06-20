@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://ui/equipment_ui.gd" id="1_equipment_ui"]
 
 [node name="EquipmentUI" type="CanvasLayer"]
+layer = 2
 script = ExtResource("1_equipment_ui")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
