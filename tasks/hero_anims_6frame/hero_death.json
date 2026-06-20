@@ -1,0 +1,11 @@
+{
+  "name": "hero_death",
+  "task_id": "task_e486188a4fca4c558aa8",
+  "status": "completed",
+  "result": {
+    "status": "completed",
+    "image_urls": [
+      "https://baizhiyun-app.oss-cn-hangzhou.aliyuncs.com/image-generate/generated/5141776699461/task_e486188a4fca4c558aa8/01.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=LTAI5tNQcKZFfRZdx248wEAV%2F20260619%2Foss-cn-hangzhou%2Fs3%2Faws4_request&X-Amz-Date=20260619T123445Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host&X-Amz-Signature=41063ae91a143c07ead198e41828886b144aa3ca5af791381ad6fd048e1c30ce"
+    ]
+  }
+}

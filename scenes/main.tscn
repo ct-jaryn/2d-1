@@ -1,0 +1,83 @@
+[gd_scene load_steps=16 format=3]
+
+[ext_resource type="Script" path="res://scripts/managers/game_manager.gd" id="1_game_manager"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_player"]
+[ext_resource type="PackedScene" path="res://scenes/enemy.tscn" id="3_enemy"]
+[ext_resource type="Texture2D" path="res://assets/images/battle_bg.png" id="4_bg"]
+[ext_resource type="Texture2D" path="res://assets/images/boss_arena.png" id="5_boss_bg"]
+[ext_resource type="PackedScene" path="res://ui/battle_ui.tscn" id="6_battle_ui"]
+[ext_resource type="PackedScene" path="res://ui/equipment_ui.tscn" id="7_equipment_ui"]
+[ext_resource type="Script" path="res://scripts/effects/floating_text_manager.gd" id="8_floating_text"]
+[ext_resource type="PackedScene" path="res://ui/shop_ui.tscn" id="9_shop_ui"]
+[ext_resource type="PackedScene" path="res://ui/stats_ui.tscn" id="10_stats_ui"]
+[ext_resource type="PackedScene" path="res://ui/pause_menu.tscn" id="11_pause_menu"]
+[ext_resource type="Script" path="res://scripts/effects/camera_shake.gd" id="13_camera_shake"]
+[ext_resource type="PackedScene" path="res://ui/achievement_ui.tscn" id="14_achievement_ui"]
+[ext_resource type="PackedScene" path="res://ui/achievement_toast.tscn" id="15_achievement_toast"]
+[ext_resource type="PackedScene" path="res://ui/quest_ui.tscn" id="16_quest_ui"]
+
+[node name="Main" type="Node2D"]
+
+[node name="Background" type="TextureRect" parent="."]
+offset_left = -640.0
+offset_top = -360.0
+offset_right = 640.0
+offset_bottom = 360.0
+mouse_filter = 2
+texture = ExtResource("4_bg")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Vignette" type="ColorRect" parent="."]
+offset_left = -640.0
+offset_top = -360.0
+offset_right = 640.0
+offset_bottom = 360.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0.15)
+
+[node name="GameManager" type="Node" parent="."]
+script = ExtResource("1_game_manager")
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+position = Vector2(-180, 80)
+scale = Vector2(1.2, 1.2)
+
+[node name="Enemy" parent="." instance=ExtResource("3_enemy")]
+position = Vector2(180, 80)
+scale = Vector2(1, 1)
+
+[node name="Camera2D" type="Camera2D" parent="."]
+script = ExtResource("13_camera_shake")
+
+[node name="BattleUI" parent="." instance=ExtResource("6_battle_ui")]
+equipment_ui = NodePath("../EquipmentUI")
+shop_ui = NodePath("../ShopUI")
+stats_ui = NodePath("../StatsUI")
+achievement_ui = NodePath("../AchievementUI")
+achievement_toast = NodePath("../AchievementToast")
+quest_ui = NodePath("../QuestUI")
+
+[node name="EquipmentUI" parent="." instance=ExtResource("7_equipment_ui")]
+battle_ui = NodePath("../BattleUI")
+
+[node name="ShopUI" parent="." instance=ExtResource("9_shop_ui")]
+battle_ui = NodePath("../BattleUI")
+
+[node name="StatsUI" parent="." instance=ExtResource("10_stats_ui")]
+battle_ui = NodePath("../BattleUI")
+
+[node name="PauseMenu" parent="." instance=ExtResource("11_pause_menu")]
+
+[node name="FloatingTextManager" type="CanvasLayer" parent="."]
+script = ExtResource("8_floating_text")
+
+[node name="AchievementUI" parent="." instance=ExtResource("14_achievement_ui")]
+game_manager = NodePath("../GameManager")
+battle_ui = NodePath("../BattleUI")
+
+[node name="AchievementToast" parent="." instance=ExtResource("15_achievement_toast")]
+
+[node name="QuestUI" parent="." instance=ExtResource("16_quest_ui")]
+game_manager = NodePath("../GameManager")
+battle_ui = NodePath("../BattleUI")

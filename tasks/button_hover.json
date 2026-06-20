@@ -1,0 +1,11 @@
+{
+  "name": "button_hover",
+  "task_id": "task_6b9899a882eb4a17bed8",
+  "status": "completed",
+  "result": {
+    "status": "completed",
+    "image_urls": [
+      "https://baizhiyun-app.oss-cn-hangzhou.aliyuncs.com/image-generate/generated/5141776699461/task_6b9899a882eb4a17bed8/01.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=LTAI5tNQcKZFfRZdx248wEAV%2F20260619%2Foss-cn-hangzhou%2Fs3%2Faws4_request&X-Amz-Date=20260619T081852Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host&X-Amz-Signature=442ab326897e49a0c213b060b166bf8f4a4093517839619803f177975bf27547"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "shop_bg",
+  "task_id": "task_4656bad2f9744f0884cb",
+  "status": "completed",
+  "result": {
+    "status": "completed",
+    "image_urls": [
+      "https://baizhiyun-app.oss-cn-hangzhou.aliyuncs.com/image-generate/generated/5141776699461/task_4656bad2f9744f0884cb/01.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=LTAI5tNQcKZFfRZdx248wEAV%2F20260619%2Foss-cn-hangzhou%2Fs3%2Faws4_request&X-Amz-Date=20260619T081853Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host&X-Amz-Signature=ba57887d8581c689fc63916047c189090db2b6a363f99a7f6e212ddeb362f9b8"
+    ]
+  }
+}

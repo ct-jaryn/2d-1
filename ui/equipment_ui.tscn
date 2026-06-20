@@ -1,0 +1,199 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ui/equipment_ui.gd" id="1_equipment_ui"]
+
+[node name="EquipmentUI" type="CanvasLayer"]
+script = ExtResource("1_equipment_ui")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 14
+
+[node name="PanelContainer" type="PanelContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/PanelContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Header" type="HBoxContainer" parent="MarginContainer/PanelContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="BackButton" type="Button" parent="MarginContainer/PanelContainer/VBoxContainer/Header"]
+layout_mode = 2
+text = "← 返回"
+
+[node name="Title" type="Label" parent="MarginContainer/PanelContainer/VBoxContainer/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 18
+text = "装备栏"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="GoldLabel" type="Label" parent="MarginContainer/PanelContainer/VBoxContainer/Header"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "0"
+vertical_alignment = 1
+
+[node name="CapacityLabel" type="Label" parent="MarginContainer/PanelContainer/VBoxContainer/Header"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "背包 0/50"
+vertical_alignment = 1
+
+[node name="WideContent" type="HBoxContainer" parent="MarginContainer/PanelContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="EquippedPanel" type="PanelContainer" parent="MarginContainer/PanelContainer/VBoxContainer/WideContent"]
+layout_mode = 2
+size_flags_horizontal = 1
+size_flags_stretch_ratio = 0.4
+
+[node name="VBox" type="VBoxContainer" parent="MarginContainer/PanelContainer/VBoxContainer/WideContent/EquippedPanel"]
+layout_mode = 2
+
+[node name="EquippedTitle" type="Label" parent="MarginContainer/PanelContainer/VBoxContainer/WideContent/EquippedPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "已装备"
+horizontal_alignment = 1
+
+[node name="EquippedList" type="VBoxContainer" parent="MarginContainer/PanelContainer/VBoxContainer/WideContent/EquippedPanel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+
+[node name="InventoryPanel" type="PanelContainer" parent="MarginContainer/PanelContainer/VBoxContainer/WideContent"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.6
+
+[node name="VBox" type="VBoxContainer" parent="MarginContainer/PanelContainer/VBoxContainer/WideContent/InventoryPanel"]
+layout_mode = 2
+
+[node name="InventoryTitle" type="Label" parent="MarginContainer/PanelContainer/VBoxContainer/WideContent/InventoryPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "背包"
+horizontal_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/PanelContainer/VBoxContainer/WideContent/InventoryPanel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="InventoryGrid" type="GridContainer" parent="MarginContainer/PanelContainer/VBoxContainer/WideContent/InventoryPanel/VBox/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 4
+
+[node name="NarrowContent" type="VBoxContainer" parent="MarginContainer/PanelContainer/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="EquippedPanel" type="PanelContainer" parent="MarginContainer/PanelContainer/VBoxContainer/NarrowContent"]
+layout_mode = 2
+size_flags_vertical = 1
+size_flags_stretch_ratio = 0.4
+
+[node name="VBox" type="VBoxContainer" parent="MarginContainer/PanelContainer/VBoxContainer/NarrowContent/EquippedPanel"]
+layout_mode = 2
+
+[node name="EquippedTitle" type="Label" parent="MarginContainer/PanelContainer/VBoxContainer/NarrowContent/EquippedPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "已装备"
+horizontal_alignment = 1
+
+[node name="EquippedList" type="VBoxContainer" parent="MarginContainer/PanelContainer/VBoxContainer/NarrowContent/EquippedPanel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+
+[node name="InventoryPanel" type="PanelContainer" parent="MarginContainer/PanelContainer/VBoxContainer/NarrowContent"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.6
+
+[node name="VBox" type="VBoxContainer" parent="MarginContainer/PanelContainer/VBoxContainer/NarrowContent/InventoryPanel"]
+layout_mode = 2
+
+[node name="InventoryTitle" type="Label" parent="MarginContainer/PanelContainer/VBoxContainer/NarrowContent/InventoryPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "背包"
+horizontal_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/PanelContainer/VBoxContainer/NarrowContent/InventoryPanel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="InventoryGrid" type="GridContainer" parent="MarginContainer/PanelContainer/VBoxContainer/NarrowContent/InventoryPanel/VBox/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 3
+
+[node name="DetailPanel" type="PanelContainer" parent="MarginContainer/PanelContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="MarginContainer/PanelContainer/VBoxContainer/DetailPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="DetailTitle" type="Label" parent="MarginContainer/PanelContainer/VBoxContainer/DetailPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = ""
+horizontal_alignment = 1
+
+[node name="DetailStats" type="RichTextLabel" parent="MarginContainer/PanelContainer/VBoxContainer/DetailPanel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+focus_mode = 0
+bbcode_enabled = true
+text = ""
+fit_content = true
+
+[node name="ButtonRow" type="HBoxContainer" parent="MarginContainer/PanelContainer/VBoxContainer/DetailPanel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="EquipButton" type="Button" parent="MarginContainer/PanelContainer/VBoxContainer/DetailPanel/VBox/ButtonRow"]
+visible = false
+layout_mode = 2
+text = "装备"
+
+[node name="UnequipButton" type="Button" parent="MarginContainer/PanelContainer/VBoxContainer/DetailPanel/VBox/ButtonRow"]
+visible = false
+layout_mode = 2
+text = "卸下"
+
+[node name="UpgradeButton" type="Button" parent="MarginContainer/PanelContainer/VBoxContainer/DetailPanel/VBox/ButtonRow"]
+visible = false
+layout_mode = 2
+text = "强化"
+
+[node name="SellButton" type="Button" parent="MarginContainer/PanelContainer/VBoxContainer/DetailPanel/VBox/ButtonRow"]
+visible = false
+layout_mode = 2
+text = "出售"
+
+[node name="AutoEquipButton" type="Button" parent="MarginContainer/PanelContainer/VBoxContainer/DetailPanel/VBox/ButtonRow"]
+layout_mode = 2
+text = "一键最佳"

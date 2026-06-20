@@ -1,0 +1,174 @@
+class_name QuestManager
+extends Node
+
+const QuestDataGD = preload("res://scripts/data/quest_data.gd")
+
+const DAILY_QUEST_COUNT: int = 4
+const REFRESH_COST: int = 100
+
+var quests: Array[QuestData] = []
+var last_refresh_day: int = -1
+var free_refresh_used: bool = false
+
+@export var game_manager: GameManager
+
+func _ready() -> void:
+	add_to_group("quest_manager")
+	_connect_events()
+	_ensure_daily_refresh()
+
+func _connect_events() -> void:
+	EventBus.enemy_defeated.connect(_on_enemy_defeated)
+	EventBus.player_leveled_up.connect(_on_player_leveled_up)
+	EventBus.gold_changed.connect(_on_gold_changed)
+	EventBus.skill_casted.connect(_on_skill_casted)
+
+func _ensure_daily_refresh() -> void:
+	var today: int = _get_today_index()
+	if today != last_refresh_day:
+		_generate_daily_quests(today)
+
+func _get_today_index() -> int:
+	var unix: int = Time.get_unix_time_from_system()
+	return unix / 86400
+
+func _generate_daily_quests(today: int) -> void:
+	quests.clear()
+	last_refresh_day = today
+	free_refresh_used = false
+	
+	var templates: Array[Dictionary] = _get_quest_templates()
+	templates.shuffle()
+	
+	for i: int in range(min(DAILY_QUEST_COUNT, templates.size())):
+		var template: Dictionary = templates[i]
+		var quest: QuestData = QuestDataGD.new(template.id, template.type, template.title, template.description, template.target)
+		quest.reward_gold = template.reward_gold
+		quest.reward_exp = template.reward_exp
+		quest.reward_equipment = template.reward_equipment
+		quests.append(quest)
+	
+	EventBus.daily_quests_refreshed.emit()
+	EventBus.message_logged.emit("今日任务已刷新")
+
+func _get_quest_templates() -> Array[Dictionary]:
+	return [
+		{"id": "daily_kills_10", "type": QuestDataGD.Type.KILL_ENEMIES, "title": "清剿小怪", "description": "累计击败 10 个敌人", "target": 10, "reward_gold": 100, "reward_exp": 50, "reward_equipment": false},
+		{"id": "daily_kills_30", "type": QuestDataGD.Type.KILL_ENEMIES, "title": "屠戮者", "description": "累计击败 30 个敌人", "target": 30, "reward_gold": 300, "reward_exp": 150, "reward_equipment": false},
+		{"id": "daily_boss_1", "type": QuestDataGD.Type.DEFEAT_BOSSES, "title": "Boss 猎手", "description": "击败 1 个 Boss", "target": 1, "reward_gold": 500, "reward_exp": 300, "reward_equipment": true},
+		{"id": "daily_boss_3", "type": QuestDataGD.Type.DEFEAT_BOSSES, "title": "Boss 克星", "description": "击败 3 个 Boss", "target": 3, "reward_gold": 1500, "reward_exp": 1000, "reward_equipment": true},
+		{"id": "daily_gold_500", "type": QuestDataGD.Type.EARN_GOLD, "title": "小有积蓄", "description": "累计获得 500 金币", "target": 500, "reward_gold": 200, "reward_exp": 100, "reward_equipment": false},
+		{"id": "daily_gold_2000", "type": QuestDataGD.Type.EARN_GOLD, "title": "富甲一方", "description": "累计获得 2000 金币", "target": 2000, "reward_gold": 800, "reward_exp": 400, "reward_equipment": false},
+		{"id": "daily_level_2", "type": QuestDataGD.Type.LEVEL_UP, "title": "快速成长", "description": "角色升级 2 次", "target": 2, "reward_gold": 400, "reward_exp": 200, "reward_equipment": true},
+		{"id": "daily_skills_10", "type": QuestDataGD.Type.CAST_SKILLS, "title": "技能大师", "description": "累计释放 10 次技能", "target": 10, "reward_gold": 300, "reward_exp": 150, "reward_equipment": false},
+	]
+
+func try_manual_refresh() -> bool:
+	if game_manager == null or game_manager.player_data == null:
+		return false
+	
+	if not free_refresh_used:
+		free_refresh_used = true
+		_generate_daily_quests(_get_today_index())
+		EventBus.message_logged.emit("免费刷新任务完成")
+		return true
+	
+	if game_manager.player_data.gold < REFRESH_COST:
+		EventBus.message_logged.emit("金币不足，刷新任务需要 %d 金币" % REFRESH_COST)
+		return false
+	
+	game_manager.player_data.gold -= REFRESH_COST
+	game_manager.player_data.stats_changed.emit()
+	_generate_daily_quests(_get_today_index())
+	EventBus.message_logged.emit("消耗 %d 金币刷新任务" % REFRESH_COST)
+	return true
+
+func claim_reward(quest: QuestData) -> bool:
+	if not quest.completed or quest.claimed:
+		return false
+	
+	quest.claimed = true
+	
+	if game_manager and game_manager.player_data:
+		if quest.reward_gold > 0:
+			game_manager.player_data.add_gold(quest.reward_gold)
+		if quest.reward_exp > 0:
+			game_manager.player_data.gain_exp(quest.reward_exp)
+	
+	if quest.reward_equipment and game_manager and game_manager.equipment_manager and game_manager.stage_manager:
+		var equip: EquipmentData = game_manager.equipment_manager.generate_drop(game_manager.stage_manager.current_enemy_level, false)
+		if game_manager.equipment_manager.add_to_inventory(equip):
+			EventBus.equipment_dropped.emit(equip)
+			EventBus.message_logged.emit("任务奖励：%s" % equip.get_display_name())
+		else:
+			EventBus.message_logged.emit("背包已满，任务装备奖励丢失")
+	
+	EventBus.message_logged.emit("领取任务奖励：%s" % quest.get_reward_text())
+	EventBus.quest_updated.emit(quest)
+	return true
+
+func _on_enemy_defeated(enemy: EnemyData) -> void:
+	_update_quest_progress(QuestDataGD.Type.KILL_ENEMIES, 1)
+	if enemy.is_boss:
+		_update_quest_progress(QuestDataGD.Type.DEFEAT_BOSSES, 1)
+
+func _on_player_leveled_up(_level: int) -> void:
+	_update_quest_progress(QuestDataGD.Type.LEVEL_UP, 1)
+
+func _on_gold_changed(amount: int) -> void:
+	if amount > 0:
+		_update_quest_progress(QuestDataGD.Type.EARN_GOLD, amount)
+
+func _on_skill_casted(_skill: SkillData) -> void:
+	_update_quest_progress(QuestDataGD.Type.CAST_SKILLS, 1)
+
+func _update_quest_progress(type: int, amount: int) -> void:
+	var changed: bool = false
+	for quest: QuestData in quests:
+		if quest.type != type or quest.completed:
+			continue
+		if quest.add_progress(amount):
+			EventBus.quest_completed.emit(quest)
+			EventBus.message_logged.emit("任务完成：%s！" % quest.title)
+		changed = true
+		EventBus.quest_updated.emit(quest)
+	
+	if changed:
+		EventBus.play_sfx.emit("coin")
+
+func get_completed_count() -> int:
+	var count: int = 0
+	for quest: QuestData in quests:
+		if quest.completed:
+			count += 1
+	return count
+
+func get_total_count() -> int:
+	return quests.size()
+
+func serialize() -> Dictionary:
+	var quest_data: Array = []
+	for quest: QuestData in quests:
+		quest_data.append(quest.serialize())
+	return {
+		"last_refresh_day": last_refresh_day,
+		"free_refresh_used": free_refresh_used,
+		"quests": quest_data
+	}
+
+func deserialize(data: Dictionary) -> void:
+	last_refresh_day = data.get("last_refresh_day", -1)
+	free_refresh_used = data.get("free_refresh_used", false)
+	quests.clear()
+	
+	var today: int = _get_today_index()
+	if today != last_refresh_day:
+		_ensure_daily_refresh()
+		return
+	
+	for q: Dictionary in data.get("quests", []):
+		var quest: QuestData = QuestDataGD.new(q.get("id", ""), q.get("type", 0), q.get("title", ""), q.get("description", ""), q.get("target", 1))
+		quest.deserialize(q)
+		quests.append(quest)
+	
+	EventBus.daily_quests_refreshed.emit()

@@ -1,0 +1,22 @@
+.godot/
+.import/
+*.tmp
+*.import
+export_presets.cfg.user
+.playwright-cli/
+backup/
+tools/*.png
+tools/*.log
+tools/node_modules/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+
+# Godot editor / engine binaries
+*.exe
+*.exe.*
+Godot_*/
+
+# Source / raw assets not used in game
+assets/images/animations/*/*_raw.png

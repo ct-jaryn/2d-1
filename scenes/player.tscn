@@ -1,0 +1,19 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/characters/player.gd" id="1_player"]
+
+[node name="Player" type="Node2D"]
+script = ExtResource("1_player")
+
+[node name="Shadow" type="Polygon2D" parent="."]
+position = Vector2(0, 130)
+color = Color(0, 0, 0, 0.4)
+polygon = PackedVector2Array(-50, -10, 50, -10, 35, 10, -35, 10)
+
+[node name="Body" type="AnimatedSprite2D" parent="."]
+
+[node name="HitFlashTimer" type="Timer" parent="."]
+wait_time = 0.1
+one_shot = true
+
+[connection signal="timeout" from="HitFlashTimer" to="." method="_on_hit_flash_timer_timeout"]
