@@ -8,6 +8,8 @@ backup/
 tools/*.png
 tools/*.log
 tools/node_modules/
+tools/screenshots/
+screenshots/
 __pycache__/
 *.pyc
 .DS_Store
@@ -17,6 +19,11 @@ Thumbs.db
 *.exe
 *.exe.*
 Godot_*/
+
+# Archives / large binaries
+*.zip
+*.7z
+*.tar.gz
 
 # Source / raw assets not used in game
 assets/images/animations/*/*_raw.png
