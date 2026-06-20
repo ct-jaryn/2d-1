@@ -2,7 +2,9 @@
 
 一个使用 **Godot 4.3** 制作的 2.5D 像素风格自动挂机 RPG，灵感来自经典《勇者斗恶龙》系列。
 
-在线试玩：https://ct-jaryn.github.io/2d-1/（如已部署 GitHub Pages）
+在线试玩：https://ct-jaryn.github.io/pixel-idle-hero/（如已部署 GitHub Pages）
+
+仓库地址：https://github.com/ct-jaryn/pixel-idle-hero
 
 ## 核心玩法
 
