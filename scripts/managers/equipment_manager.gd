@@ -36,7 +36,7 @@ var inventory: Array[EquipmentData] = []
 const MAX_INVENTORY: int = 50
 
 func _ready() -> void:
-	add_to_group("equipment_manager")
+	Services.equipment_manager = self
 
 func get_equipment_bonuses() -> Dictionary:
 	var bonuses: Dictionary = {
@@ -146,6 +146,72 @@ func load_equipment(p_equipped: Dictionary, p_inventory: Array[EquipmentData]) -
 		if equip != null:
 			equipped[type] = equip
 	inventory.assign(p_inventory)
+
+## 存档序列化：已装备 + 背包。
+func serialize() -> Dictionary:
+	var equipped_data: Dictionary = {}
+	for type: int in equipped.keys():
+		equipped_data[str(type)] = _serialize_equipment(equipped[type])
+	var inventory_data: Array = []
+	for equip: EquipmentData in inventory:
+		inventory_data.append(_serialize_equipment(equip))
+	return {"equipped": equipped_data, "inventory": inventory_data}
+
+## 存档反序列化：重建装备对象，不触发信号。
+func deserialize(data: Dictionary) -> void:
+	var loaded_equipped: Dictionary = {}
+	for type_str: String in data.get("equipped", {}).keys():
+		var equip: EquipmentData = _deserialize_equipment(data["equipped"][type_str])
+		if equip != null:
+			loaded_equipped[int(type_str)] = equip
+	var loaded_inventory: Array[EquipmentData] = []
+	for item: Dictionary in data.get("inventory", []):
+		var equip: EquipmentData = _deserialize_equipment(item)
+		if equip != null:
+			loaded_inventory.append(equip)
+	load_equipment(loaded_equipped, loaded_inventory)
+
+func _serialize_equipment(equip: EquipmentData) -> Dictionary:
+	return {
+		"name": equip.equip_name,
+		"type": equip.type,
+		"rarity": equip.rarity,
+		"level": equip.level,
+		"attack": equip.attack_bonus,
+		"defense": equip.defense_bonus,
+		"max_hp": equip.max_hp_bonus,
+		"attack_speed": equip.attack_speed_bonus,
+		"crit_rate": equip.crit_rate_bonus,
+		"gold_percent": equip.gold_bonus_percent,
+		"exp_percent": equip.exp_bonus_percent
+	}
+
+func _deserialize_equipment(data: Dictionary) -> EquipmentData:
+	var type_count: int = EquipmentData.Type.size()
+	var rarity_count: int = EquipmentData.Rarity.size()
+	var type: int = _clamp_int(data.get("type", EquipmentData.Type.WEAPON), 0, type_count - 1, EquipmentData.Type.WEAPON)
+	var rarity: int = _clamp_int(data.get("rarity", EquipmentData.Rarity.COMMON), 0, rarity_count - 1, EquipmentData.Rarity.COMMON)
+	var level: int = maxi(1, _clamp_int(data.get("level", 1), 0, 999999, 1))
+
+	var equip: EquipmentData = EquipmentData.new(
+		data.get("name", ""),
+		type,
+		rarity,
+		level
+	)
+	equip.attack_bonus = maxi(0, _clamp_int(data.get("attack", 0), -999999, 999999, 0))
+	equip.defense_bonus = maxi(0, _clamp_int(data.get("defense", 0), -999999, 999999, 0))
+	equip.max_hp_bonus = maxi(0, _clamp_int(data.get("max_hp", 0), -999999, 999999, 0))
+	equip.attack_speed_bonus = maxf(0.0, float(data.get("attack_speed", 0.0)))
+	equip.crit_rate_bonus = maxf(0.0, float(data.get("crit_rate", 0.0)))
+	equip.gold_bonus_percent = maxf(0.0, float(data.get("gold_percent", 0.0)))
+	equip.exp_bonus_percent = maxf(0.0, float(data.get("exp_percent", 0.0)))
+	return equip
+
+func _clamp_int(value: Variant, min_value: int, max_value: int, default: int) -> int:
+	if value == null or typeof(value) != TYPE_INT and typeof(value) != TYPE_FLOAT:
+		return default
+	return clampi(int(value), min_value, max_value)
 
 func has_drop_chance(is_boss: bool) -> bool:
 	var base_chance: float = BalanceConfig.BOSS_DROP_CHANCE if is_boss else BalanceConfig.NORMAL_DROP_CHANCE

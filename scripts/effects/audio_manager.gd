@@ -23,7 +23,7 @@ var sfx_enabled: bool = true
 var _pending_bgm: bool = true
 
 func _ready() -> void:
-	add_to_group("audio_manager")
+	Services.audio_manager = self
 	var bgm_stream: AudioStream = load(BGM_PATH)
 	if bgm_stream:
 		if bgm_stream is AudioStreamWAV:

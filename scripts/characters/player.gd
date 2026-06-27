@@ -40,18 +40,18 @@ const BASE_SCALE: float = 1.0
 var base_position: Vector2
 var _is_dead: bool = false
 var _breath_time: float = 0.0
+## 当前进行中的攻击/受击动作 tween，用于在新的动作开始前清理旧的，避免位置漂移
+var _action_tween: Tween = null
 
 func _ready() -> void:
 	base_position = position
 	add_to_group("player")
 
 	if data == null:
-		var gm = get_tree().get_first_node_in_group("game_manager") as GameManager
-		if gm:
-			data = gm.player_data
+		data = Services.player_data
 
 	if battle_manager == null:
-		battle_manager = get_tree().get_first_node_in_group("battle_manager") as BattleManager
+		battle_manager = Services.battle_manager
 
 	if battle_manager:
 		battle_manager.enemy_attacked.connect(_on_enemy_attacked)
@@ -94,6 +94,9 @@ func _process(delta: float) -> void:
 	if not _is_dead:
 		_breath_time += delta
 		position.y = base_position.y + sin(_breath_time * 2.0) * 2.0
+		## 没有动作 tween 在跑时，把 x 平滑拉回基础位置，防止快速攻击打断 tween 后产生漂移
+		if _action_tween == null or not _action_tween.is_valid():
+			position.x = lerpf(position.x, base_position.x, clampf(delta * 25.0, 0.0, 1.0))
 
 func _update_appearance() -> void:
 	if data == null:
@@ -120,28 +123,66 @@ func _on_enemy_attacked(damage: int, is_crit: bool) -> void:
 	_play_animation("hit")
 	body.modulate = Color.RED
 	hit_flash.start(0.1)
-	var tween: Tween = create_tween()
-	tween.tween_property(self, "position:x", base_position.x - 8.0, 0.05)
-	tween.tween_property(self, "position:x", base_position.x, 0.05)
+	_knockback(is_crit)
 	_show_floating_text(damage, is_crit, false)
 
 func _on_player_attacked(damage: int, is_crit: bool) -> void:
 	if _is_dead:
 		return
 	_play_animation("attack")
+	_lunge_forward(is_crit)
 	_show_floating_text(damage, is_crit, true)
+
+## 清理进行中的动作 tween，避免与新的攻击/受击叠加造成位置与缩放漂移
+func _kill_action_tween() -> void:
+	if _action_tween != null and _action_tween.is_valid():
+		_action_tween.kill()
+	_action_tween = null
+
+## 攻击：先后撤蓄力，再向敌人(右侧)突进，最后回收，配合身体的挤压拉伸增强打击感
+func _lunge_forward(is_crit: bool) -> void:
+	_kill_action_tween()
+	var dist: float = 32.0 if is_crit else 24.0
+	var t: Tween = create_tween()
+	# 蓄力：微微后撤 + 纵向拉长
+	t.tween_property(self, "position:x", base_position.x - 6.0, 0.03).set_ease(Tween.EASE_OUT)
+	t.parallel().tween_property(body, "scale", Vector2(0.9, 1.1), 0.03)
+	# 突进：向前冲 + 横向拉伸
+	t.tween_property(self, "position:x", base_position.x + dist, 0.06).set_ease(Tween.EASE_OUT)
+	t.parallel().tween_property(body, "scale", Vector2(1.15, 0.9), 0.06)
+	# 回收：回到基础位置 + 恢复比例
+	t.tween_property(self, "position:x", base_position.x, 0.10).set_ease(Tween.EASE_IN)
+	t.parallel().tween_property(body, "scale", Vector2.ONE, 0.10)
+	_action_tween = t
+
+## 受击：向远离敌人(左侧)方向击退，身体被压扁，暴击击退更远
+func _knockback(is_crit: bool) -> void:
+	_kill_action_tween()
+	var dist: float = 14.0 if is_crit else 9.0
+	var t: Tween = create_tween()
+	t.tween_property(self, "position:x", base_position.x - dist, 0.06).set_ease(Tween.EASE_OUT)
+	t.parallel().tween_property(body, "scale", Vector2(1.18, 0.85), 0.06)
+	t.tween_property(self, "position:x", base_position.x, 0.12).set_ease(Tween.EASE_IN)
+	t.parallel().tween_property(body, "scale", Vector2.ONE, 0.12)
+	_action_tween = t
 
 func _on_player_died() -> void:
 	_is_dead = true
+	_kill_action_tween()
+	body.scale = Vector2.ONE
+	position = base_position
 	_play_animation("death")
 
 func revive() -> void:
 	_is_dead = false
+	_kill_action_tween()
+	body.scale = Vector2.ONE
 	body.modulate = Color.WHITE
+	position = base_position
 	_play_animation("idle")
 
 func _show_floating_text(damage: int, is_crit: bool, is_player_attacking: bool) -> void:
-	var ftm: FloatingTextManager = get_tree().get_first_node_in_group("floating_text_manager") as FloatingTextManager
+	var ftm: FloatingTextManager = Services.floating_text_manager
 	if ftm == null:
 		return
 	if is_player_attacking:

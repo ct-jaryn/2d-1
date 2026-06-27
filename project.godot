@@ -50,5 +50,6 @@ cast_skill_3={"deadzone": 0.5, "events": [Object(InputEventKey,"resource_local_t
 ]}
 
 [autoload]
+Services="*res://scripts/autoload/services.gd"
 EventBus="*res://scripts/autoload/event_bus.gd"
 GameAudio="*res://scenes/audio_manager.tscn"

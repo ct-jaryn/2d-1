@@ -8,9 +8,8 @@ func _ready() -> void:
 	visible = false
 	add_to_group("sub_ui")
 	if game_manager == null:
-		game_manager = get_tree().get_first_node_in_group("game_manager") as GameManager
-	if battle_ui == null:
-		battle_ui = get_node_or_null("../BattleUI") as CanvasLayer
+		game_manager = Services.game_manager
+	## battle_ui 由场景通过 @export NodePath 接线，无需代码兜底查找。
 	var back_button: Button = _find_back_button()
 	if back_button:
 		back_button.pressed.connect(_on_back_pressed)

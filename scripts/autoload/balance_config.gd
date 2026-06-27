@@ -132,7 +132,7 @@ const OFFLINE_EXP_CAP_FACTOR: float = 0.5
 
 ## 存档
 const SAVE_INTERVAL: float = 10.0
-const SAVE_VERSION: int = 3
+const SAVE_VERSION: int = 4
 
 ## Boss 解锁
 const BOSS_UNLOCK_LEVEL: int = 5

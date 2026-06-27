@@ -1,3 +1,4 @@
+class_name DeathParticles
 extends CPUParticles2D
 
 const DeathParticlesScene: PackedScene = preload("res://scenes/death_particles.tscn")

@@ -1,18 +1,60 @@
 class_name RewardManager
 extends Node
 
-@export var player_data: PlayerData
-@export var equipment_manager: EquipmentManager
-@export var shop_manager: ShopManager
-@export var stage_manager: StageManager
+var _player_data: PlayerData
+var player_data: PlayerData:
+	get:
+		if _player_data == null:
+			_player_data = Services.player_data
+		return _player_data
+	set(v):
+		_player_data = v
+
+var _equipment_manager: EquipmentManager
+var equipment_manager: EquipmentManager:
+	get:
+		if _equipment_manager == null:
+			_equipment_manager = Services.equipment_manager
+		return _equipment_manager
+	set(v):
+		_equipment_manager = v
+
+var _shop_manager: ShopManager
+var shop_manager: ShopManager:
+	get:
+		if _shop_manager == null:
+			_shop_manager = Services.shop_manager
+		return _shop_manager
+	set(v):
+		_shop_manager = v
+
+var _stage_manager: StageManager
+var stage_manager: StageManager:
+	get:
+		if _stage_manager == null:
+			_stage_manager = Services.stage_manager
+		return _stage_manager
+	set(v):
+		_stage_manager = v
+
+var _battle_manager: BattleManager
+var battle_manager: BattleManager:
+	get:
+		if _battle_manager == null:
+			_battle_manager = Services.battle_manager
+		return _battle_manager
+	set(v):
+		_battle_manager = v
 
 const OFFLINE_REWARD_RATE_GOLD: float = BalanceConfig.OFFLINE_REWARD_RATE_GOLD
 const OFFLINE_REWARD_RATE_EXP: float = BalanceConfig.OFFLINE_REWARD_RATE_EXP
 const MAX_OFFLINE_SECONDS: float = BalanceConfig.OFFLINE_MAX_HOURS * 3600.0
 
 func _ready() -> void:
-	add_to_group("reward_manager")
-	EventBus.enemy_defeated.connect(_on_enemy_defeated)
+	Services.reward_manager = self
+	## 敌人击杀由 BattleManager 直发，直接监听以发放奖励。
+	if battle_manager:
+		battle_manager.enemy_died.connect(_on_enemy_defeated)
 
 func _on_enemy_defeated(enemy: EnemyData) -> void:
 	if player_data == null or stage_manager == null:
@@ -29,8 +71,6 @@ func _on_enemy_defeated(enemy: EnemyData) -> void:
 
 	if enemy.is_boss:
 		player_data.bosses_defeated += 1
-
-	EventBus.energy_gained.emit(10 if enemy.is_boss else 3)
 
 	EventBus.play_sfx.emit("coin")
 	EventBus.message_logged.emit("击败了 %s！EXP +%d  Gold +%d" % [enemy.name, exp_reward, gold_reward])

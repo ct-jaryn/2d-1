@@ -23,13 +23,22 @@ const ACHIEVEMENTS: Array[Dictionary] = [
 var achievements: Array[AchievementDataGD] = []
 var completed_ids: Array[String] = []
 
-@export var player_data: PlayerData
+var _player_data: PlayerData
+var player_data: PlayerData:
+	get:
+		if _player_data == null:
+			_player_data = Services.player_data
+		return _player_data
+	set(v):
+		_player_data = v
 
 func _ready() -> void:
-	add_to_group("achievement_manager")
+	Services.achievement_manager = self
 	_init_achievements()
-	
-	EventBus.enemy_defeated.connect(_on_enemy_defeated)
+
+	## 敌人击杀由 BattleManager 直发，直接监听。
+	if Services.battle_manager:
+		Services.battle_manager.enemy_died.connect(_on_enemy_defeated)
 	EventBus.stage_changed.connect(_on_stage_changed)
 	if player_data:
 		player_data.leveled_up.connect(_on_level_up)

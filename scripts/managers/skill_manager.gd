@@ -5,8 +5,23 @@ signal skill_casted(skill: SkillData)
 signal energy_changed(current: int, maximum: int)
 signal cooldown_updated(skill_type: int, remaining: float)
 
-@export var player_data: PlayerData
-@export var battle_manager: BattleManager
+var _player_data: PlayerData
+var player_data: PlayerData:
+	get:
+		if _player_data == null:
+			_player_data = Services.player_data
+		return _player_data
+	set(v):
+		_player_data = v
+
+var _battle_manager: BattleManager
+var battle_manager: BattleManager:
+	get:
+		if _battle_manager == null:
+			_battle_manager = Services.battle_manager
+		return _battle_manager
+	set(v):
+		_battle_manager = v
 
 var skills: Array[SkillData] = []
 var cooldowns: Dictionary = {}  ## {SkillData.Type: remaining_time}
@@ -19,9 +34,11 @@ var berserk_timer: float = 0.0
 var berserk_multiplier: float = 1.0
 
 func _ready() -> void:
-	add_to_group("skill_manager")
+	Services.skill_manager = self
 	_init_default_skills()
-	EventBus.energy_gained.connect(add_energy)
+	## 能量收益：直接监听战斗击杀事件，不再经 EventBus.energy_gained 中转。
+	if battle_manager:
+		battle_manager.enemy_died.connect(_on_enemy_died)
 
 func _init_default_skills() -> void:
 	skills.append(SkillData.new("治愈术", SkillData.Type.HEAL, "恢复 %.0f%% 最大生命值" % (BalanceConfig.SKILL_HEAL_PERCENT * 100.0), 15.0, 20, BalanceConfig.SKILL_HEAL_PERCENT))
@@ -42,7 +59,7 @@ func _process(delta: float) -> void:
 	for type: int in expired_types:
 		cooldowns.erase(type)
 		cooldown_updated.emit(type, 0.0)
-	
+
 	## 能量自然回复（累加小数避免高帧率下回复为 0）
 	if energy < max_energy:
 		_energy_regen_accumulator += delta * BalanceConfig.ENERGY_REGEN_PER_SECOND
@@ -51,7 +68,7 @@ func _process(delta: float) -> void:
 			_energy_regen_accumulator -= whole
 			energy = min(max_energy, energy + whole)
 			energy_changed.emit(energy, max_energy)
-	
+
 	## 狂暴状态倒计时
 	if berserk_timer > 0.0:
 		berserk_timer -= delta
@@ -74,11 +91,11 @@ func cast_skill(skill: SkillData) -> bool:
 				return false
 		_:
 			return false
-	
+
 	energy -= skill.energy_cost
 	energy_changed.emit(energy, max_energy)
 	cooldowns[skill.type] = skill.cooldown
-	
+
 	match skill.type:
 		SkillData.Type.HEAL:
 			_cast_heal(skill)
@@ -86,21 +103,23 @@ func cast_skill(skill: SkillData) -> bool:
 			_cast_heavy_hit(skill)
 		SkillData.Type.BERSERK:
 			_cast_berserk(skill)
-	
+
 	skill_casted.emit(skill)
-	EventBus.skill_casted.emit(skill)
 	return true
 
 func add_energy(amount: int) -> void:
 	energy = min(max_energy, energy + amount)
 	energy_changed.emit(energy, max_energy)
 
+func _on_enemy_died(enemy: EnemyData) -> void:
+	add_energy(10 if enemy.is_boss else 3)
+
 func _cast_heal(skill: SkillData) -> void:
 	if player_data == null:
 		return
 	var heal_amount: int = int(player_data.max_hp * skill.power)
 	player_data.heal(heal_amount)
-	var ftm: FloatingTextManager = get_tree().get_first_node_in_group("floating_text_manager") as FloatingTextManager
+	var ftm: FloatingTextManager = Services.floating_text_manager
 	if ftm:
 		var player: Node2D = get_tree().get_first_node_in_group("player") as Node2D
 		if player:
@@ -113,13 +132,13 @@ func _cast_heavy_hit(skill: SkillData) -> void:
 	var damage: int = int(player_data.attack * skill.power)
 	## 抑制 player_attacked 信号，避免普通攻击飘字与重击飘字重叠
 	var actual: int = battle_manager.deal_damage_to_enemy(damage, true, false)
-	
+
 	EventBus.play_sfx.emit("attack")
 	var camera: Camera2D = get_viewport().get_camera_2d()
 	if camera and camera.has_method("shake"):
 		camera.shake(BalanceConfig.SKILL_HEAVY_HIT_SHAKE)
-	
-	var ftm: FloatingTextManager = get_tree().get_first_node_in_group("floating_text_manager") as FloatingTextManager
+
+	var ftm: FloatingTextManager = Services.floating_text_manager
 	if ftm:
 		var enemy: Node2D = get_tree().get_first_node_in_group("enemy") as Node2D
 		if enemy:
@@ -156,3 +175,22 @@ func set_cooldowns(data: Dictionary) -> void:
 	cooldowns.clear()
 	for type_str: String in data.keys():
 		cooldowns[int(type_str)] = float(data[type_str])
+
+func serialize() -> Dictionary:
+	return {
+		"energy": energy,
+		"cooldowns": cooldowns.duplicate(),
+		"berserk_timer": berserk_timer,
+		"berserk_multiplier": berserk_multiplier
+	}
+
+func deserialize(data: Dictionary) -> void:
+	energy = int(data.get("energy", 0))
+	berserk_timer = float(data.get("berserk_timer", 0.0))
+	berserk_multiplier = float(data.get("berserk_multiplier", 1.0))
+	set_cooldowns(data.get("cooldowns", {}))
+	## 狂暴倍率由 SkillManager 拥有，加载后同步回 PlayerData 的运行时攻速倍率。
+	if player_data != null:
+		player_data.attack_speed_multiplier = berserk_multiplier
+		player_data.recalc_stats(false)
+	energy_changed.emit(energy, max_energy)

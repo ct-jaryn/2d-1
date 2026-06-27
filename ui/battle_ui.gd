@@ -40,41 +40,35 @@ const GOLD_ICON: Texture2D = preload("res://assets/images/icon_gold.png")
 var skill_buttons: Dictionary = {}
 var _skill_by_type: Dictionary = {}
 var _current_log: RichTextLabel
+var _stats_dirty: bool = false
+
+func _mark_stats_dirty() -> void:
+	_stats_dirty = true
 
 func _ready() -> void:
 	if game_manager == null:
-		game_manager = get_tree().get_first_node_in_group("game_manager") as GameManager
+		game_manager = Services.game_manager
 	if battle_manager == null and game_manager:
 		battle_manager = game_manager.battle_manager
 	if player_data == null and game_manager:
 		player_data = game_manager.player_data
-	
-	if equipment_ui == null:
-		equipment_ui = get_node_or_null("../EquipmentUI") as CanvasLayer
-	if shop_ui == null:
-		shop_ui = get_node_or_null("../ShopUI") as CanvasLayer
-	if stats_ui == null:
-		stats_ui = get_node_or_null("../StatsUI") as CanvasLayer
-	if achievement_ui == null:
-		achievement_ui = get_node_or_null("../AchievementUI") as CanvasLayer
-	if achievement_toast == null:
-		achievement_toast = get_node_or_null("../AchievementToast") as CanvasLayer
-	if quest_ui == null:
-		quest_ui = get_node_or_null("../QuestUI") as CanvasLayer
+
+	## 各子 UI 由场景通过 @export NodePath 接线，无需代码兜底查找。
 
 	_current_log = log_text
 
 	if player_data:
-		EventBus.stats_changed.connect(_update_player_ui)
+		## stats_changed 高频触发，用脏标记在 _process 中合并刷新，避免每帧多次全量重绘。
+		EventBus.stats_changed.connect(_mark_stats_dirty)
 		EventBus.player_leveled_up.connect(_on_level_up)
 	EventBus.enemy_spawned.connect(_on_enemy_spawned)
-	EventBus.enemy_defeated.connect(_on_enemy_defeated)
 	EventBus.message_logged.connect(_log_message)
 	EventBus.stage_changed.connect(_on_stage_changed)
 	EventBus.achievement_unlocked.connect(_on_achievement_unlocked)
 	if battle_manager:
 		battle_manager.player_attacked.connect(_on_player_attacked)
 		battle_manager.enemy_attacked.connect(_on_enemy_attacked)
+		battle_manager.enemy_died.connect(_on_enemy_defeated)
 
 	_init_progress_bars()
 	_init_skill_bar()
@@ -261,18 +255,16 @@ func _on_enemy_defeated(enemy: EnemyData) -> void:
 		_log_message("[color=gold]恭喜！击败了 Boss！[/color]")
 
 func _on_player_attacked(damage: int, is_crit: bool) -> void:
-	_update_player_ui()
+	## 玩家数值变动已由 stats_changed → 脏标记驱动刷新，此处仅记录战斗日志。
 	var crit_text: String = "[color=yellow]暴击[/color] " if is_crit else ""
 	_log_message("你造成 %s%d 点伤害" % [crit_text, damage])
 
 func _on_enemy_attacked(damage: int, is_crit: bool) -> void:
-	_update_player_ui()
 	var crit_text: String = "[color=red]暴击[/color] " if is_crit else ""
 	_log_message("敌人造成 %s%d 点伤害" % [crit_text, damage])
 
 func _on_level_up(new_level: int) -> void:
 	_log_message("[color=cyan]升级！当前等级 Lv.%d[/color]" % new_level)
-	_update_player_ui()
 
 func _on_stage_changed(stage: int) -> void:
 	stage_label.text = "第 %d 关" % stage
@@ -316,6 +308,10 @@ func _update_skill_button(type: int) -> void:
 		btn.remove_theme_color_override("font_color")
 
 func _process(_delta: float) -> void:
+	## 合并本帧内多次 stats_changed 为一次全量刷新。
+	if _stats_dirty:
+		_stats_dirty = false
+		_update_player_ui()
 	if battle_manager and battle_manager.enemy_data:
 		var enemy: EnemyData = battle_manager.enemy_data
 		enemy_hp.value = float(enemy.hp) / float(enemy.max_hp) * 100.0

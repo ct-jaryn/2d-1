@@ -52,6 +52,7 @@ var play_time_seconds: float = 0.0
 
 signal leveled_up(new_level: int)
 signal stats_changed
+signal gold_changed(amount: int)
 
 func _init() -> void:
 	recalc_stats()
@@ -98,10 +99,6 @@ func level_up() -> void:
 	level += 1
 	recalc_stats()
 	leveled_up.emit(level)
-	_play_sfx("level_up")
-
-func _play_sfx(name: String) -> void:
-	EventBus.play_sfx.emit(name)
 
 func take_damage(damage: int) -> int:
 	var actual: int = max(1, damage - defense)
@@ -127,7 +124,7 @@ func add_gold(amount: int) -> void:
 	gold += amount
 	if amount > 0:
 		total_gold_earned += amount
-	EventBus.gold_changed.emit(amount)
+	gold_changed.emit(amount)
 	stats_changed.emit()
 
 func spend_gold(amount: int) -> bool:
@@ -136,6 +133,43 @@ func spend_gold(amount: int) -> bool:
 	if gold < amount:
 		return false
 	gold -= amount
-	EventBus.gold_changed.emit(-amount)
+	gold_changed.emit(-amount)
 	stats_changed.emit()
 	return true
+
+## 存档序列化：仅持久化字段，不触发改动信号。
+func serialize() -> Dictionary:
+	return {
+		"level": level,
+		"exp": exp,
+		"gold": gold,
+		"hp": hp,
+		"bonus_attack": bonus_attack,
+		"bonus_defense": bonus_defense,
+		"total_kills": total_kills,
+		"total_gold_earned": total_gold_earned,
+		"total_damage_dealt": total_damage_dealt,
+		"total_damage_taken": total_damage_taken,
+		"death_count": death_count,
+		"bosses_defeated": bosses_defeated,
+		"highest_stage": highest_stage,
+		"play_time_seconds": play_time_seconds
+	}
+
+## 存档反序列化：直接写字段，最后统一 recalc，避免加载过程中触发统计/任务信号。
+func deserialize(data: Dictionary) -> void:
+	level = int(data.get("level", 1))
+	exp = int(data.get("exp", 0))
+	gold = int(data.get("gold", 0))
+	bonus_attack = int(data.get("bonus_attack", 0))
+	bonus_defense = int(data.get("bonus_defense", 0))
+	total_kills = int(data.get("total_kills", 0))
+	total_gold_earned = int(data.get("total_gold_earned", 0))
+	total_damage_dealt = int(data.get("total_damage_dealt", 0))
+	total_damage_taken = int(data.get("total_damage_taken", 0))
+	death_count = int(data.get("death_count", 0))
+	bosses_defeated = int(data.get("bosses_defeated", 0))
+	highest_stage = int(data.get("highest_stage", 1))
+	play_time_seconds = float(data.get("play_time_seconds", 0.0))
+	recalc_stats(false)
+	hp = clampi(int(data.get("hp", max_hp)), 1, max_hp)

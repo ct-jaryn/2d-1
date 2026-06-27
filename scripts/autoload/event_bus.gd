@@ -1,11 +1,13 @@
 extends Node
 
+## 全局事件总线。仅承载跨子系统的全局事件。
+##
+## 战斗高频事件（player_attacked/enemy_attacked/enemy_died/player_died）由
+## BattleManager 作为唯一真相源直接发射，消费方连接 BattleManager 信号，
+## 不再在本总线重复定义，避免双轨制。
+
 ## 战斗事件
 signal enemy_spawned(enemy: EnemyData)
-signal enemy_defeated(enemy: EnemyData)
-signal player_died
-signal player_attacked(damage: int, is_crit: bool)
-signal enemy_attacked(damage: int, is_crit: bool)
 
 ## Boss 机制事件
 signal boss_healed(amount: int)
@@ -15,8 +17,6 @@ signal boss_berserk(active: bool)
 signal player_leveled_up(new_level: int)
 signal stats_changed
 signal gold_changed(amount: int)
-signal energy_gained(amount: int)
-signal skill_casted(skill: SkillData)
 
 ## 游戏进度事件
 signal stage_changed(stage: int)

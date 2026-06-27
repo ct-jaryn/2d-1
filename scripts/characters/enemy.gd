@@ -9,6 +9,10 @@ extends Node2D
 
 var current_enemy: EnemyData = null
 var _death_tween: Tween = null
+## 基础位置（场景中固定），用于突进/击退后回收，防止漂移
+var base_position: Vector2
+## 当前进行中的攻击/受击动作 tween
+var _action_tween: Tween = null
 
 static var _sprite_frames_cache: Dictionary = {}
 
@@ -26,8 +30,9 @@ const FALLBACK_NAMES: PackedStringArray = ["史莱姆", "哥布林", "蝙蝠", "
 
 func _ready() -> void:
 	add_to_group("enemy")
+	base_position = position
 	if battle_manager == null:
-		battle_manager = get_tree().get_first_node_in_group("battle_manager") as BattleManager
+		battle_manager = Services.battle_manager
 	if battle_manager:
 		battle_manager.battle_started.connect(_on_battle_started)
 		battle_manager.enemy_attacked.connect(_on_enemy_attacked)
@@ -38,11 +43,14 @@ func _ready() -> void:
 			_on_battle_started(battle_manager.enemy_data)
 	_update_appearance()
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if current_enemy and current_enemy.is_alive():
 		hp_bar.value = float(current_enemy.hp) / float(current_enemy.max_hp) * 100.0
 	else:
 		hp_bar.value = 0.0
+	## 没有动作 tween 在跑时，把 x 平滑拉回基础位置，防止快速攻击打断 tween 后产生漂移
+	if _action_tween == null or not _action_tween.is_valid():
+		position.x = lerpf(position.x, base_position.x, clampf(delta * 25.0, 0.0, 1.0))
 
 func _on_battle_started(enemy: EnemyData) -> void:
 	current_enemy = enemy
@@ -53,22 +61,41 @@ func _on_battle_started(enemy: EnemyData) -> void:
 	if _death_tween != null and _death_tween.is_valid():
 		_death_tween.kill()
 		_death_tween = null
+	## 新敌人入场：清理残留动作并把姿态/位置复位，避免上一只的突进状态残留
+	_kill_action_tween()
+	body.scale = Vector2.ONE
+	position = base_position
 	_update_appearance()
 
 func _on_enemy_attacked(_damage: int, _is_crit: bool) -> void:
-	## 敌人攻击时稍微前冲
-	var start_x: float = position.x
-	var tween: Tween = create_tween()
-	tween.tween_property(self, "position:x", start_x + 5.0, 0.05)
-	tween.tween_property(self, "position:x", start_x, 0.05)
+	## 敌人攻击时向玩家(左侧)前冲，配合身体拉伸，再回收
+	_kill_action_tween()
+	var dist: float = 10.0
+	var t: Tween = create_tween()
+	t.tween_property(self, "position:x", base_position.x - dist, 0.06).set_ease(Tween.EASE_OUT)
+	t.parallel().tween_property(body, "scale", Vector2(1.12, 0.92), 0.06)
+	t.tween_property(self, "position:x", base_position.x, 0.10).set_ease(Tween.EASE_IN)
+	t.parallel().tween_property(body, "scale", Vector2.ONE, 0.10)
+	_action_tween = t
 
 func _on_player_attacked(_damage: int, _is_crit: bool) -> void:
+	## 被玩家击中：向远离玩家(右侧)方向击退，身体压扁，暴击击退更远
+	_kill_action_tween()
 	body.modulate = Color(1.5, 1.5, 1.5, 1.0)
 	hit_flash.start(0.1)
-	var start_x: float = position.x
-	var tween: Tween = create_tween()
-	tween.tween_property(self, "position:x", start_x + 8.0, 0.05)
-	tween.tween_property(self, "position:x", start_x, 0.05)
+	var dist: float = 14.0 if _is_crit else 9.0
+	var t: Tween = create_tween()
+	t.tween_property(self, "position:x", base_position.x + dist, 0.06).set_ease(Tween.EASE_OUT)
+	t.parallel().tween_property(body, "scale", Vector2(1.18, 0.85), 0.06)
+	t.tween_property(self, "position:x", base_position.x, 0.12).set_ease(Tween.EASE_IN)
+	t.parallel().tween_property(body, "scale", Vector2.ONE, 0.12)
+	_action_tween = t
+
+## 清理进行中的动作 tween，避免叠加造成位置与缩放漂移
+func _kill_action_tween() -> void:
+	if _action_tween != null and _action_tween.is_valid():
+		_action_tween.kill()
+	_action_tween = null
 
 func _on_hit_flash_timer_timeout() -> void:
 	body.modulate = Color.WHITE
@@ -76,6 +103,8 @@ func _on_hit_flash_timer_timeout() -> void:
 func _on_enemy_died(_enemy: EnemyData) -> void:
 	DeathParticles.spawn(get_tree().current_scene, global_position)
 	## 死亡时停止待机动画、淡出并隐藏血条
+	_kill_action_tween()
+	body.scale = Vector2.ONE
 	body.stop()
 	hp_bar.visible = false
 	## 停止受击闪烁定时器，避免其回调把 modulate 重置为白色打断死亡淡出

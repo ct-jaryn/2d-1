@@ -27,7 +27,7 @@ func _ready() -> void:
 		btn.mouse_entered.connect(func() -> void: EventBus.play_sfx.emit("ui_hover"))
 		btn.focus_entered.connect(func() -> void: EventBus.play_sfx.emit("ui_hover"))
 
-	var audio: AudioManager = get_tree().get_first_node_in_group("audio_manager") as AudioManager
+	var audio: AudioManager = Services.audio_manager
 	if audio:
 		bgm_check.button_pressed = audio.bgm_enabled
 		sfx_check.button_pressed = audio.sfx_enabled
@@ -78,11 +78,11 @@ func _on_quit_pressed() -> void:
 	get_tree().quit()
 
 func _on_bgm_toggled(enabled: bool) -> void:
-	var audio: AudioManager = get_tree().get_first_node_in_group("audio_manager") as AudioManager
+	var audio: AudioManager = Services.audio_manager
 	if audio:
 		audio.set_bgm_enabled(enabled)
 
 func _on_sfx_toggled(enabled: bool) -> void:
-	var audio: AudioManager = get_tree().get_first_node_in_group("audio_manager") as AudioManager
+	var audio: AudioManager = Services.audio_manager
 	if audio:
 		audio.set_sfx_enabled(enabled)

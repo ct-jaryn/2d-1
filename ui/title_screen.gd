@@ -32,7 +32,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				new_game_button.grab_focus()
 
 func _start_game(scene_path: String) -> void:
-	var audio_manager: AudioManager = get_tree().get_first_node_in_group("audio_manager") as AudioManager
+	var audio_manager: AudioManager = Services.audio_manager
 	if audio_manager:
 		audio_manager.try_play_bgm()
 	get_tree().change_scene_to_file(scene_path)

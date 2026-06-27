@@ -8,6 +8,7 @@ var _pool: Array[Label] = []
 var _active: Array[Label] = []
 
 func _ready() -> void:
+	Services.floating_text_manager = self
 	## 预创建对象池
 	for i: int in range(POOL_SIZE):
 		var label: Label = _create_label()
@@ -54,11 +55,14 @@ func _return_to_pool(label: Label) -> void:
 
 func _create(text: String, color: Color, position: Vector2, is_crit: bool) -> void:
 	var label: Label = _get_label()
-	
-	## 将世界坐标转换为屏幕坐标
+
+	## 本节点是 CanvasLayer，子 Label 处于屏幕坐标空间；传入 position 是世界坐标，
+	## 按 Camera2D 当前视角换算为屏幕坐标。
 	var camera: Camera2D = get_viewport().get_camera_2d()
 	var screen_pos: Vector2 = position
 	if camera:
-		screen_pos = camera.unproject_position(position)
-	
+		var screen_center: Vector2 = camera.get_screen_center_position()
+		var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+		screen_pos = (position - screen_center) + viewport_size * 0.5
+
 	label.init(text, color, screen_pos, is_crit, _return_to_pool)

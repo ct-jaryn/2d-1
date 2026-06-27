@@ -1,24 +1,28 @@
 class_name GameManager
 extends Node
 
-@export var player_data: PlayerData
-@export var battle_manager: BattleManager
-@export var equipment_manager: EquipmentManager
-@export var skill_manager: SkillManager
-@export var shop_manager: ShopManager
-@export var achievement_manager: AchievementManager
-@export var stage_manager: StageManager
-@export var reward_manager: RewardManager
-@export var quest_manager: QuestManager
+## 组合根：负责创建各子系统管理器、注册到 Services、桥接 PlayerData 领域信号到
+## EventBus，以及加载存档与启动首场战斗。
+##
+## 跨管理器依赖不再在此手动接线——各管理器通过 Services 自行解析协作者。
 
 @onready var background: TextureRect = $"../Background"
+
+var player_data: PlayerData
+var battle_manager: BattleManager
+var equipment_manager: EquipmentManager
+var skill_manager: SkillManager
+var shop_manager: ShopManager
+var achievement_manager: AchievementManager
+var stage_manager: StageManager
+var reward_manager: RewardManager
+var quest_manager: QuestManager
 
 var save_manager: SaveManager = null
 const SAVE_INTERVAL: float = BalanceConfig.SAVE_INTERVAL
 var save_timer: float = 0.0
 
 func _ready() -> void:
-	add_to_group("game_manager")
 	_init_subsystems()
 	_connect_events()
 	_load_save()
@@ -27,81 +31,61 @@ func _ready() -> void:
 		stage_manager.spawn_normal_enemy()
 
 func _init_subsystems() -> void:
-	if player_data == null:
-		player_data = PlayerData.new()
+	## PlayerData 是 Resource，无 _ready，需在此先注册，供后续管理器在 _ready 中解析。
+	player_data = PlayerData.new()
+	Services.player_data = player_data
+	Services.game_manager = self
 
-	battle_manager = _ensure_manager(battle_manager, BattleManager)
-	equipment_manager = _ensure_manager(equipment_manager, EquipmentManager)
-	skill_manager = _ensure_manager(skill_manager, SkillManager)
-	shop_manager = _ensure_manager(shop_manager, ShopManager)
-	reward_manager = _ensure_manager(reward_manager, RewardManager)
-	achievement_manager = _ensure_manager(achievement_manager, AchievementManager)
-	stage_manager = _ensure_manager(stage_manager, StageManager)
-	quest_manager = _ensure_manager(quest_manager, QuestManager)
-
-	battle_manager.player_data = player_data
-
-	equipment_manager.equipment_changed.connect(_on_equipment_changed)
-
-	skill_manager.player_data = player_data
-	skill_manager.battle_manager = battle_manager
-
-	shop_manager.player_data = player_data
-	shop_manager.equipment_manager = equipment_manager
-	shop_manager.stage_manager = stage_manager
-
-	reward_manager.player_data = player_data
-	reward_manager.equipment_manager = equipment_manager
-	reward_manager.shop_manager = shop_manager
-	reward_manager.stage_manager = stage_manager
-
-	achievement_manager.player_data = player_data
-
-	stage_manager.player_data = player_data
-	stage_manager.battle_manager = battle_manager
+	## 创建顺序保证：被依赖的管理器先于依赖方注册（battle 先于 skill/stage/reward/quest）。
+	battle_manager = _ensure(BattleManager)
+	equipment_manager = _ensure(EquipmentManager)
+	skill_manager = _ensure(SkillManager)
+	shop_manager = _ensure(ShopManager)
+	stage_manager = _ensure(StageManager)
 	stage_manager.background = background
-
-	quest_manager.player_data = player_data
-	quest_manager.equipment_manager = equipment_manager
-	quest_manager.stage_manager = stage_manager
+	reward_manager = _ensure(RewardManager)
+	achievement_manager = _ensure(AchievementManager)
+	quest_manager = _ensure(QuestManager)
 
 	save_manager = SaveManager.new()
+	Services.save_manager = save_manager
 
-func _ensure_manager(current: Node, script_class: GDScript) -> Node:
-	if current != null:
-		return current
+func _ensure(script_class: GDScript) -> Node:
 	var instance: Node = script_class.new()
 	add_child(instance)
 	return instance
 
 func _connect_events() -> void:
+	## 桥接 PlayerData 领域信号到全局 EventBus，供 UI/任务等跨子系统消费。
 	if player_data:
 		player_data.leveled_up.connect(_on_player_leveled_up)
 		player_data.stats_changed.connect(_on_player_stats_changed)
+		player_data.gold_changed.connect(_on_player_gold_changed)
+	## 战斗死亡由 BattleManager 直发，此处直接处理复活逻辑。
 	if battle_manager:
-		battle_manager.player_died.connect(_on_battle_player_died)
-		battle_manager.enemy_died.connect(_on_battle_enemy_died)
-	EventBus.player_died.connect(_on_player_died)
+		battle_manager.player_died.connect(_on_player_died)
+	## 装备变动 → 重算玩家属性
+	if equipment_manager:
+		equipment_manager.equipment_changed.connect(_on_equipment_changed)
+	## Boss 机制事件仅用于日志反馈
 	EventBus.boss_healed.connect(_on_boss_healed)
 	EventBus.boss_berserk.connect(_on_boss_berserk)
 
 func _on_player_leveled_up(new_level: int) -> void:
 	EventBus.player_leveled_up.emit(new_level)
+	EventBus.play_sfx.emit("level_up")
 
 func _on_player_stats_changed() -> void:
 	EventBus.stats_changed.emit()
 
-func _on_battle_player_died() -> void:
-	EventBus.player_died.emit()
-
-func _on_battle_enemy_died(enemy: EnemyData) -> void:
-	EventBus.enemy_defeated.emit(enemy)
+func _on_player_gold_changed(amount: int) -> void:
+	EventBus.gold_changed.emit(amount)
 
 func _load_save() -> void:
 	if save_manager == null:
 		return
 	if save_manager.has_save():
-		if save_manager.load_game(player_data, equipment_manager, self, achievement_manager, quest_manager):
+		if save_manager.load_game(player_data, equipment_manager, stage_manager, achievement_manager, quest_manager, skill_manager, shop_manager):
 			EventBus.message_logged.emit("已加载存档")
 			reward_manager.apply_offline_rewards(save_manager.get_last_save_time())
 		else:
@@ -117,9 +101,9 @@ func _process(delta: float) -> void:
 		player_data.play_time_seconds += delta
 
 func _save_game() -> void:
-	if save_manager == null or player_data == null or equipment_manager == null or stage_manager == null or quest_manager == null:
+	if save_manager == null or player_data == null or equipment_manager == null or stage_manager == null:
 		return
-	save_manager.save_game(player_data, equipment_manager, stage_manager.current_enemy_level, achievement_manager, quest_manager, self)
+	save_manager.save_game(player_data, equipment_manager, stage_manager, achievement_manager, quest_manager, skill_manager, shop_manager)
 
 func challenge_boss() -> bool:
 	if stage_manager:

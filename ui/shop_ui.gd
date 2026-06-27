@@ -105,6 +105,8 @@ func _setup_gold_icon() -> void:
 	gold_label.get_parent().move_child(icon, gold_label.get_index())
 
 func _update_gold() -> void:
+	if not visible:
+		return
 	if game_manager and game_manager.player_data:
 		gold_label.text = "%d" % game_manager.player_data.gold
 

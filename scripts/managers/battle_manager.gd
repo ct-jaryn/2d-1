@@ -1,8 +1,20 @@
 class_name BattleManager
 extends Node
 
-@export var player_data: PlayerData
-@export var enemy_data: EnemyData
+## 战斗系统：持有当前敌人数据，驱动玩家/敌人攻击循环。
+## 战斗事件（player_attacked/enemy_attacked/enemy_died/player_died）的唯一真相源，
+## 消费方直接连接本类的信号。
+
+var _player_data: PlayerData
+var player_data: PlayerData:
+	get:
+		if _player_data == null:
+			_player_data = Services.player_data
+		return _player_data
+	set(v):
+		_player_data = v
+
+var enemy_data: EnemyData
 
 var player_attack_timer: float = 0.0
 var enemy_attack_timer: float = 0.0
@@ -15,7 +27,7 @@ signal enemy_attacked(damage: int, is_crit: bool)
 signal battle_started(enemy: EnemyData)
 
 func _ready() -> void:
-	add_to_group("battle_manager")
+	Services.battle_manager = self
 
 func start_battle(p_enemy: EnemyData, p_boss_mechanics: BossMechanics = null) -> void:
 	enemy_data = p_enemy

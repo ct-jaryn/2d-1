@@ -1,8 +1,24 @@
 class_name StageManager
 extends Node
 
-@export var player_data: PlayerData
-@export var battle_manager: BattleManager
+var _player_data: PlayerData
+var player_data: PlayerData:
+	get:
+		if _player_data == null:
+			_player_data = Services.player_data
+		return _player_data
+	set(v):
+		_player_data = v
+
+var _battle_manager: BattleManager
+var battle_manager: BattleManager:
+	get:
+		if _battle_manager == null:
+			_battle_manager = Services.battle_manager
+		return _battle_manager
+	set(v):
+		_battle_manager = v
+
 @export var background: TextureRect
 
 const NORMAL_BG: Texture2D = preload("res://assets/images/battle_bg.png")
@@ -19,8 +35,10 @@ const ENEMY_NAMES: PackedStringArray = [
 ]
 
 func _ready() -> void:
-	add_to_group("stage_manager")
-	EventBus.enemy_defeated.connect(_on_enemy_defeated)
+	Services.stage_manager = self
+	## 敌人击杀由 BattleManager 直发，直接监听以推进关卡。
+	if battle_manager:
+		battle_manager.enemy_died.connect(_on_enemy_defeated)
 
 func spawn_normal_enemy() -> void:
 	is_fighting_boss = false
@@ -75,3 +93,9 @@ func _update_background(is_boss: bool) -> void:
 	if background == null:
 		return
 	background.texture = BOSS_BG if is_boss else NORMAL_BG
+
+func serialize() -> Dictionary:
+	return {"level": current_enemy_level}
+
+func deserialize(data: Dictionary) -> void:
+	current_enemy_level = int(data.get("level", 1))

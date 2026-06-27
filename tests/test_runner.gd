@@ -20,6 +20,7 @@ func _ready() -> void:
 	test_boss_mechanics()
 	test_skill_manager()
 	test_save_round_trip()
+	test_save_v3_migration()
 	test_reward_manager_gold_single_count()
 	
 	print("=== 测试结束 ===")
@@ -194,36 +195,95 @@ func test_save_round_trip() -> void:
 	pd.gain_exp(pd.exp_to_next)
 	pd.bonus_attack = 5
 	pd.recalc_stats()
-	
+
 	var em: EquipmentManager = EquipmentManager.new()
 	var equip: EquipmentData = EquipmentData.new("测试剑", EquipmentData.Type.WEAPON, EquipmentData.Rarity.RARE, 3)
 	em.add_to_inventory(equip)
-	
+
+	var stage: StageManager = StageManager.new()
+	stage.current_enemy_level = 5
+
 	var sm: SaveManager = SaveManager.new()
 	var save_path: String = sm.SAVE_PATH
 	var backup_path: String = save_path + ".test_backup"
-	
+
 	## 备份现有存档（如有），避免污染
 	var dir: DirAccess = DirAccess.open("user://")
 	if dir != null and FileAccess.file_exists(save_path):
 		dir.copy(save_path, backup_path)
 		dir.remove(save_path)
-	
-	var save_ok: bool = sm.save_game(pd, em, 5, null, null, null)
+
+	var save_ok: bool = sm.save_game(pd, em, stage, null, null, null, null)
 	_assert(save_ok, "存档写入成功")
-	
+
 	var pd2: PlayerData = PlayerData.new()
 	var em2: EquipmentManager = EquipmentManager.new()
-	var gm: GameManager = GameManager.new()
-	var load_ok: bool = sm.load_game(pd2, em2, gm, null, null)
+	var stage2: StageManager = StageManager.new()
+	var load_ok: bool = sm.load_game(pd2, em2, stage2, null, null, null, null)
 	_assert(load_ok, "存档读取成功")
 	_assert_eq(pd2.gold, 1234, "金币往返正确")
 	_assert_eq(pd2.level, 2, "等级往返正确")
+	_assert_eq(stage2.current_enemy_level, 5, "关卡往返正确")
 	_assert_eq(em2.inventory.size(), 1, "背包装备往返正确")
 	var loaded: EquipmentData = em2.inventory[0]
 	_assert_eq(loaded.equip_name, "测试剑", "装备名称往返正确")
 	_assert_eq(loaded.rarity, EquipmentData.Rarity.RARE, "装备稀有度往返正确")
-	
+
+	## 清理并恢复备份
+	if dir != null:
+		if FileAccess.file_exists(save_path):
+			dir.remove(save_path)
+		if FileAccess.file_exists(save_path + ".tmp"):
+			dir.remove(save_path + ".tmp")
+		if FileAccess.file_exists(save_path + ".bak"):
+			dir.remove(save_path + ".bak")
+		if FileAccess.file_exists(backup_path):
+			dir.copy(backup_path, save_path)
+			dir.remove(backup_path)
+
+func test_save_v3_migration() -> void:
+	print("\n[SaveManager] v3 → v4 存档迁移")
+	var sm: SaveManager = SaveManager.new()
+	var save_path: String = sm.SAVE_PATH
+	var backup_path: String = save_path + ".test_backup"
+
+	## 备份现有存档（如有）
+	var dir: DirAccess = DirAccess.open("user://")
+	if dir != null and FileAccess.file_exists(save_path):
+		dir.copy(save_path, backup_path)
+		dir.remove(save_path)
+
+	## 手写一份 v3 格式存档：stage 为裸 int，equipped/inventory 在顶层。
+	var equip_dict: Dictionary = {"0": {"name": "旧剑", "type": 0, "rarity": 1, "level": 2, "attack": 5}}
+	var v3_data: Dictionary = {
+		"version": 3,
+		"timestamp": Time.get_unix_time_from_system(),
+		"player": {"level": 3, "exp": 10, "gold": 500, "hp": 80, "bonus_attack": 1},
+		"stage": 7,
+		"equipped": equip_dict,
+		"inventory": [{"name": "旧盔", "type": 1, "rarity": 0, "level": 1, "defense": 2}],
+		"skill": {"energy": 40, "cooldowns": {}, "berserk_timer": 0.0, "berserk_multiplier": 1.0},
+		"shop": {"exp_potion_charges": 2},
+		"achievements": {"completed": ["first_blood"]},
+		"quests": {"last_refresh_day": -1, "free_refresh_used": false, "quests": []}
+	}
+	var file: FileAccess = FileAccess.open(save_path, FileAccess.WRITE)
+	file.store_string(JSON.stringify(v3_data))
+	file.close()
+
+	var pd: PlayerData = PlayerData.new()
+	var em: EquipmentManager = EquipmentManager.new()
+	var stage: StageManager = StageManager.new()
+	var ach: AchievementManager = AchievementManager.new()
+	var quest: QuestManager = QuestManager.new()
+	var load_ok: bool = sm.load_game(pd, em, stage, ach, quest, null, null)
+	_assert(load_ok, "v3 存档迁移后加载成功")
+	_assert_eq(pd.gold, 500, "迁移后玩家金币正确")
+	_assert_eq(pd.level, 3, "迁移后玩家等级正确")
+	_assert_eq(stage.current_enemy_level, 7, "迁移后关卡正确")
+	_assert_eq(em.inventory.size(), 1, "迁移后背包装备正确")
+	_assert_eq(em.get_equipped(EquipmentData.Type.WEAPON).equip_name, "旧剑", "迁移后已装备武器正确")
+
 	## 清理并恢复备份
 	if dir != null:
 		if FileAccess.file_exists(save_path):

@@ -10,20 +10,46 @@ var quests: Array[QuestDataGD] = []
 var last_refresh_day: int = -1
 var free_refresh_used: bool = false
 
-@export var player_data: PlayerData
-@export var equipment_manager: EquipmentManager
-@export var stage_manager: StageManager
+var _player_data: PlayerData
+var player_data: PlayerData:
+	get:
+		if _player_data == null:
+			_player_data = Services.player_data
+		return _player_data
+	set(v):
+		_player_data = v
+
+var _equipment_manager: EquipmentManager
+var equipment_manager: EquipmentManager:
+	get:
+		if _equipment_manager == null:
+			_equipment_manager = Services.equipment_manager
+		return _equipment_manager
+	set(v):
+		_equipment_manager = v
+
+var _stage_manager: StageManager
+var stage_manager: StageManager:
+	get:
+		if _stage_manager == null:
+			_stage_manager = Services.stage_manager
+		return _stage_manager
+	set(v):
+		_stage_manager = v
 
 func _ready() -> void:
-	add_to_group("quest_manager")
+	Services.quest_manager = self
 	_connect_events()
 	_ensure_daily_refresh()
 
 func _connect_events() -> void:
-	EventBus.enemy_defeated.connect(_on_enemy_defeated)
+	## 敌人击杀、技能施放由各自管理器直发，直接监听；升级/金币走 EventBus。
+	if Services.battle_manager:
+		Services.battle_manager.enemy_died.connect(_on_enemy_defeated)
+	if Services.skill_manager:
+		Services.skill_manager.skill_casted.connect(_on_skill_casted)
 	EventBus.player_leveled_up.connect(_on_player_leveled_up)
 	EventBus.gold_changed.connect(_on_gold_changed)
-	EventBus.skill_casted.connect(_on_skill_casted)
 
 func _ensure_daily_refresh() -> void:
 	var today: int = _get_today_index()

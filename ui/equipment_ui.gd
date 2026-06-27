@@ -293,6 +293,8 @@ func _on_auto_equip_pressed() -> void:
 	EventBus.message_logged.emit("已自动装备最佳装备")
 
 func _update_top_bar() -> void:
+	if not visible:
+		return
 	if game_manager and game_manager.player_data:
 		gold_label.text = "%s" % _format_number(game_manager.player_data.gold)
 	if equipment_manager:

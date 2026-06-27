@@ -4,9 +4,32 @@ extends Node
 signal item_purchased(item_id: String, price: int)
 signal purchase_failed(reason: String)
 
-@export var player_data: PlayerData
-@export var equipment_manager: EquipmentManager
-@export var stage_manager: StageManager
+var _player_data: PlayerData
+var player_data: PlayerData:
+	get:
+		if _player_data == null:
+			_player_data = Services.player_data
+		return _player_data
+	set(v):
+		_player_data = v
+
+var _equipment_manager: EquipmentManager
+var equipment_manager: EquipmentManager:
+	get:
+		if _equipment_manager == null:
+			_equipment_manager = Services.equipment_manager
+		return _equipment_manager
+	set(v):
+		_equipment_manager = v
+
+var _stage_manager: StageManager
+var stage_manager: StageManager:
+	get:
+		if _stage_manager == null:
+			_stage_manager = Services.stage_manager
+		return _stage_manager
+	set(v):
+		_stage_manager = v
 
 const ITEMS: Dictionary = {
 	"health_potion": {
@@ -44,7 +67,7 @@ const ITEMS: Dictionary = {
 var exp_potion_charges: int = 0
 
 func _ready() -> void:
-	add_to_group("shop_manager")
+	Services.shop_manager = self
 
 func get_item(id: String) -> Dictionary:
 	return ITEMS.get(id, {})
@@ -117,3 +140,9 @@ func apply_exp_bonus(exp: int) -> int:
 		exp_potion_charges -= 1
 		return int(exp * BalanceConfig.EXP_POTION_MULTIPLIER)
 	return exp
+
+func serialize() -> Dictionary:
+	return {"exp_potion_charges": exp_potion_charges}
+
+func deserialize(data: Dictionary) -> void:
+	exp_potion_charges = int(data.get("exp_potion_charges", 0))
