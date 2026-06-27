@@ -1,7 +1,5 @@
 extends CanvasLayer
 
-@export var game_manager: GameManager
-
 @onready var resume_button: Button = %ResumeButton
 @onready var title_button: Button = %TitleButton
 @onready var reset_button: Button = %ResetButton

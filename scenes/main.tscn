@@ -74,11 +74,9 @@ battle_ui = NodePath("../BattleUI")
 script = ExtResource("8_floating_text")
 
 [node name="AchievementUI" parent="." instance=ExtResource("14_achievement_ui")]
-game_manager = NodePath("../GameManager")
 battle_ui = NodePath("../BattleUI")
 
 [node name="AchievementToast" parent="." instance=ExtResource("15_achievement_toast")]
 
 [node name="QuestUI" parent="." instance=ExtResource("16_quest_ui")]
-game_manager = NodePath("../GameManager")
 battle_ui = NodePath("../BattleUI")

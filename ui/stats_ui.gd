@@ -18,10 +18,10 @@ func _on_back_pressed() -> void:
 		battle_ui.show_battle.call_deferred()
 
 func _refresh() -> void:
-	if game_manager == null or game_manager.player_data == null:
+	if Services.player_data == null:
 		return
 	
-	var pd: PlayerData = game_manager.player_data
+	var pd: PlayerData = Services.player_data
 	var play_time: String = _format_time(pd.play_time_seconds)
 	
 	stats_text.text = """

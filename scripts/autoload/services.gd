@@ -24,3 +24,7 @@ var reward_manager: RewardManager
 var save_manager: SaveManager
 var floating_text_manager: FloatingTextManager
 var audio_manager: AudioManager
+
+## 场景表现节点（演员）注册点，供特效、技能、复活逻辑直接解析。
+var player_node: Node2D
+var enemy_node: Node2D

@@ -7,14 +7,13 @@ const CIRCLE_ICON: Texture2D = preload("res://assets/images/icon_circle.png")
 @onready var progress_label: Label = %ProgressLabel
 
 var achievement_manager: AchievementManager = null
-var _achievement_cards: Dictionary = {}
+var _card_nodes: Dictionary = {}
 
 func _ready() -> void:
 	super._ready()
-	if game_manager:
-		achievement_manager = game_manager.achievement_manager
-		if achievement_manager:
-			achievement_manager.achievement_unlocked.connect(_on_achievement_unlocked)
+	achievement_manager = Services.achievement_manager
+	if achievement_manager:
+		achievement_manager.achievement_unlocked.connect(_on_achievement_unlocked)
 
 func show_panel() -> void:
 	super.show_panel()
@@ -40,14 +39,15 @@ func _rebuild_all() -> void:
 	
 	for child: Node in achievement_list.get_children():
 		child.queue_free()
-	_achievement_cards.clear()
+	_card_nodes.clear()
 	
 	for ach: AchievementData in achievement_manager.achievements:
-		var card: PanelContainer = _build_card(ach)
+		var nodes: Dictionary = _build_card(ach)
+		var card: PanelContainer = nodes["card"] as PanelContainer
 		achievement_list.add_child(card)
-		_achievement_cards[ach] = card
+		_card_nodes[ach] = nodes
 
-func _build_card(ach: AchievementData) -> PanelContainer:
+func _build_card(ach: AchievementData) -> Dictionary:
 	var card: PanelContainer = PanelContainer.new()
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	
@@ -115,7 +115,7 @@ func _build_card(ach: AchievementData) -> PanelContainer:
 	vbox.add_child(desc)
 	vbox.add_child(reward)
 	card.add_child(vbox)
-	return card
+	return {"card": card, "icon": icon, "title": title}
 
 func _set_card_style(style: StyleBoxFlat, ach: AchievementData) -> void:
 	if ach.completed:
@@ -126,7 +126,8 @@ func _set_card_style(style: StyleBoxFlat, ach: AchievementData) -> void:
 		style.border_color = Color(0.35, 0.32, 0.45, 1)
 
 func _update_card(ach: AchievementData) -> void:
-	var card: PanelContainer = _achievement_cards.get(ach) as PanelContainer
+	var nodes: Dictionary = _card_nodes.get(ach, {})
+	var card: PanelContainer = nodes.get("card") as PanelContainer
 	if card == null:
 		return
 	
@@ -146,10 +147,8 @@ func _update_card(ach: AchievementData) -> void:
 	style.content_margin_bottom = 8
 	card.add_theme_stylebox_override("panel", style)
 	
-	var vbox: VBoxContainer = card.get_child(0) as VBoxContainer
-	var title_row: HBoxContainer = vbox.get_child(0) as HBoxContainer
-	var icon: TextureRect = title_row.get_node("Icon") as TextureRect
-	var title: Label = title_row.get_node("TitleLabel") as Label
+	var icon: TextureRect = nodes.get("icon") as TextureRect
+	var title: Label = nodes.get("title") as Label
 	
 	icon.texture = ACHIEVEMENT_ICON if ach.completed else CIRCLE_ICON
 	title.text = ach.name

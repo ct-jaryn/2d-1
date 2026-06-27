@@ -121,7 +121,7 @@ func _cast_heal(skill: SkillData) -> void:
 	player_data.heal(heal_amount)
 	var ftm: FloatingTextManager = Services.floating_text_manager
 	if ftm:
-		var player: Node2D = get_tree().get_first_node_in_group("player") as Node2D
+		var player: Node2D = Services.player_node
 		if player:
 			ftm.show_heal(player.global_position + Vector2(0, -40), heal_amount)
 	EventBus.message_logged.emit("治愈术恢复 %d 点生命" % heal_amount)
@@ -140,7 +140,7 @@ func _cast_heavy_hit(skill: SkillData) -> void:
 
 	var ftm: FloatingTextManager = Services.floating_text_manager
 	if ftm:
-		var enemy: Node2D = get_tree().get_first_node_in_group("enemy") as Node2D
+		var enemy: Node2D = Services.enemy_node
 		if enemy:
 			ftm.show_damage(enemy.global_position + Vector2(0, -40), actual, true, true)
 	EventBus.message_logged.emit("重击造成 %d 点伤害" % actual)

@@ -125,7 +125,7 @@ func _on_player_died() -> void:
 		battle_manager.player_attack_timer = 0.0
 		battle_manager.enemy_attack_timer = 0.0
 	stage_manager.spawn_normal_enemy()
-	var player_node = get_tree().get_first_node_in_group("player") as Node2D
+	var player_node: Node2D = Services.player_node
 	if player_node and player_node.has_method("revive"):
 		player_node.revive()
 

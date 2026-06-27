@@ -1,6 +1,5 @@
 extends CanvasLayer
 
-@export var game_manager: GameManager
 @export var player_data: PlayerData
 @export var battle_manager: BattleManager
 @export var equipment_ui: CanvasLayer
@@ -46,12 +45,10 @@ func _mark_stats_dirty() -> void:
 	_stats_dirty = true
 
 func _ready() -> void:
-	if game_manager == null:
-		game_manager = Services.game_manager
-	if battle_manager == null and game_manager:
-		battle_manager = game_manager.battle_manager
-	if player_data == null and game_manager:
-		player_data = game_manager.player_data
+	if battle_manager == null:
+		battle_manager = Services.battle_manager
+	if player_data == null:
+		player_data = Services.player_data
 
 	## 各子 UI 由场景通过 @export NodePath 接线，无需代码兜底查找。
 
@@ -120,11 +117,11 @@ func _any_sub_ui_visible() -> bool:
 	return false
 
 func _cast_skill_by_index(index: int) -> void:
-	if game_manager == null or game_manager.skill_manager == null:
+	if Services.skill_manager == null:
 		return
-	var types: Array = game_manager.skill_manager.skills.map(func(s: SkillData) -> int: return s.type)
+	var types: Array = Services.skill_manager.skills.map(func(s: SkillData) -> int: return s.type)
 	if index < types.size():
-		game_manager.skill_manager.cast_skill(types[index])
+		Services.skill_manager.cast_skill(types[index])
 
 func _show_tutorial_if_needed() -> void:
 	if player_data == null or player_data.level > 1 or player_data.play_time_seconds > 0:
@@ -206,9 +203,9 @@ func _set_bar_colors(bar: ProgressBar, fg: Color, bg: Color) -> void:
 	bar.add_theme_stylebox_override("background", bg_style)
 
 func _init_skill_bar() -> void:
-	if game_manager == null or game_manager.skill_manager == null:
+	if Services.skill_manager == null:
 		return
-	var skill_manager: SkillManager = game_manager.skill_manager
+	var skill_manager: SkillManager = Services.skill_manager
 	skill_manager.energy_changed.connect(_on_energy_changed)
 	skill_manager.skill_casted.connect(_on_skill_casted)
 	skill_manager.cooldown_updated.connect(_on_cooldown_updated)
@@ -242,7 +239,7 @@ func _update_player_ui() -> void:
 	exp_bar.max_value = player_data.exp_to_next
 	exp_bar.value = player_data.exp
 	gold_label.text = "%d" % player_data.gold
-	stage_label.text = game_manager.stage_manager.get_stage_display() if game_manager and game_manager.stage_manager else "第 1 关"
+	stage_label.text = Services.stage_manager.get_stage_display() if Services.stage_manager else "第 1 关"
 
 func _on_enemy_spawned(enemy: EnemyData) -> void:
 	enemy_name.text = enemy.name
@@ -287,13 +284,13 @@ func _update_skill_buttons() -> void:
 		_update_skill_button(type)
 
 func _update_skill_button(type: int) -> void:
-	if game_manager == null or game_manager.skill_manager == null:
+	if Services.skill_manager == null:
 		return
 	var btn: Button = skill_buttons.get(type)
 	var skill: SkillData = _skill_by_type.get(type)
 	if btn == null or skill == null:
 		return
-	var sm: SkillManager = game_manager.skill_manager
+	var sm: SkillManager = Services.skill_manager
 	var cd: float = sm.get_remaining_cooldown(type)
 	btn.disabled = not sm.can_cast(skill)
 	if cd > 0.0:
@@ -323,8 +320,8 @@ func _log_message(text: String) -> void:
 
 func _on_boss_button_pressed() -> void:
 	_play_ui_click()
-	if game_manager:
-		game_manager.challenge_boss()
+	if Services.stage_manager:
+		Services.stage_manager.challenge_boss()
 
 func _on_equipment_button_pressed() -> void:
 	_play_ui_click()
@@ -358,8 +355,8 @@ func _on_quest_button_pressed() -> void:
 
 func _on_skill_button_pressed(skill: SkillData) -> void:
 	_play_ui_click()
-	if game_manager and game_manager.skill_manager:
-		game_manager.skill_manager.cast_skill(skill)
+	if Services.skill_manager:
+		Services.skill_manager.cast_skill(skill)
 
 func _on_achievement_unlocked(achievement: AchievementData) -> void:
 	if achievement_toast:
@@ -369,9 +366,9 @@ func show_battle() -> void:
 	visible = true
 
 func _update_boss_button() -> void:
-	if game_manager == null or game_manager.stage_manager == null:
+	if Services.stage_manager == null:
 		return
-	var stage_manager: StageManager = game_manager.stage_manager
+	var stage_manager: StageManager = Services.stage_manager
 	var can_challenge: bool = stage_manager.current_enemy_level >= stage_manager.boss_unlock_level and not stage_manager.is_fighting_boss
 	boss_button.disabled = not can_challenge
 	if stage_manager.is_fighting_boss:

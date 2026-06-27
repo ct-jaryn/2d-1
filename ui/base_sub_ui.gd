@@ -1,14 +1,11 @@
 class_name BaseSubUI
 extends CanvasLayer
 
-@export var game_manager: GameManager
 @export var battle_ui: CanvasLayer
 
 func _ready() -> void:
 	visible = false
 	add_to_group("sub_ui")
-	if game_manager == null:
-		game_manager = Services.game_manager
 	## battle_ui 由场景通过 @export NodePath 接线，无需代码兜底查找。
 	var back_button: Button = _find_back_button()
 	if back_button:

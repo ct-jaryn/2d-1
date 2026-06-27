@@ -7,13 +7,12 @@ const CHECK_ICON: Texture2D = preload("res://assets/images/icon_check.png")
 @onready var message_label: Label = %MessageLabel
 
 var quest_manager: QuestManager = null
-var _quest_cards: Dictionary = {}
+var _card_nodes: Dictionary = {}
 
 func _ready() -> void:
 	super._ready()
 	refresh_button.pressed.connect(_on_refresh_pressed)
-	if game_manager:
-		quest_manager = game_manager.quest_manager
+	quest_manager = Services.quest_manager
 	EventBus.daily_quests_refreshed.connect(_rebuild_all)
 	EventBus.quest_updated.connect(_on_quest_updated)
 
@@ -35,18 +34,19 @@ func show_panel() -> void:
 
 func _rebuild_all() -> void:
 	_clear_list()
-	_quest_cards.clear()
+	_card_nodes.clear()
 	if quest_manager == null:
 		return
 	
 	_update_refresh_button()
 	
 	for quest: QuestData in quest_manager.quests:
-		var card: PanelContainer = _build_card(quest)
+		var nodes: Dictionary = _build_card(quest)
+		var card: PanelContainer = nodes["card"] as PanelContainer
 		quest_list.add_child(card)
-		_quest_cards[quest] = card
+		_card_nodes[quest] = nodes
 
-func _build_card(quest: QuestData) -> PanelContainer:
+func _build_card(quest: QuestData) -> Dictionary:
 	var card: PanelContainer = PanelContainer.new()
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	
@@ -120,7 +120,14 @@ func _build_card(quest: QuestData) -> PanelContainer:
 	hbox.add_child(info)
 	hbox.add_child(action)
 	card.add_child(hbox)
-	return card
+	return {
+		"card": card,
+		"title": title,
+		"progress_label": progress,
+		"reward": reward,
+		"progress_bar": progress_bar,
+		"action": action,
+	}
 
 func _set_card_style(style: StyleBoxFlat, quest: QuestData) -> void:
 	if quest.claimed:
@@ -134,7 +141,8 @@ func _set_card_style(style: StyleBoxFlat, quest: QuestData) -> void:
 		style.border_color = Color(0.35, 0.32, 0.45, 1)
 
 func _update_card(quest: QuestData) -> void:
-	var card: PanelContainer = _quest_cards.get(quest) as PanelContainer
+	var nodes: Dictionary = _card_nodes.get(quest, {})
+	var card: PanelContainer = nodes.get("card") as PanelContainer
 	if card == null:
 		return
 	
@@ -154,14 +162,12 @@ func _update_card(quest: QuestData) -> void:
 	style.content_margin_bottom = 8
 	card.add_theme_stylebox_override("panel", style)
 	
+	var title: Label = nodes.get("title") as Label
+	var progress_label: Label = nodes.get("progress_label") as Label
+	var reward: Label = nodes.get("reward") as Label
+	var progress_bar: ProgressBar = nodes.get("progress_bar") as ProgressBar
+	var action: Control = nodes.get("action") as Control
 	var hbox: HBoxContainer = card.get_child(0) as HBoxContainer
-	var info: VBoxContainer = hbox.get_child(0) as VBoxContainer
-	var title_row: HBoxContainer = info.get_child(0) as HBoxContainer
-	var title: Label = title_row.get_node("TitleLabel") as Label
-	var progress_label: Label = title_row.get_node("ProgressLabel") as Label
-	var reward: Label = info.get_node("RewardLabel") as Label
-	var progress_bar: ProgressBar = info.get_node("ProgressBar") as ProgressBar
-	var action: Control = hbox.get_node("ActionControl") as Control
 	
 	title.text = quest.title
 	if quest.completed:
@@ -176,6 +182,7 @@ func _update_card(quest: QuestData) -> void:
 	action.queue_free()
 	var new_action: Control = _create_action_control(quest)
 	new_action.name = "ActionControl"
+	nodes["action"] = new_action
 	hbox.add_child(new_action)
 	hbox.move_child(new_action, 1)
 

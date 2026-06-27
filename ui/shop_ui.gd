@@ -10,11 +10,11 @@ const ITEM_IDS: PackedStringArray = ["health_potion", "attack_boost", "defense_b
 
 func _ready() -> void:
 	super._ready()
-	if game_manager and game_manager.player_data:
-		game_manager.player_data.stats_changed.connect(_update_gold)
-	if game_manager and game_manager.shop_manager:
-		game_manager.shop_manager.purchase_failed.connect(_show_message)
-		game_manager.shop_manager.item_purchased.connect(_on_purchased)
+	if Services.player_data:
+		Services.player_data.stats_changed.connect(_update_gold)
+	if Services.shop_manager:
+		Services.shop_manager.purchase_failed.connect(_show_message)
+		Services.shop_manager.item_purchased.connect(_on_purchased)
 	_setup_gold_icon()
 	_refresh()
 
@@ -33,11 +33,11 @@ func _on_back_pressed() -> void:
 func _refresh() -> void:
 	_update_gold()
 	_clear_items()
-	if game_manager == null or game_manager.shop_manager == null:
+	if Services.shop_manager == null:
 		return
 	
 	for id: String in ITEM_IDS:
-		var item: Dictionary = game_manager.shop_manager.get_item(id)
+		var item: Dictionary = Services.shop_manager.get_item(id)
 		if item.is_empty():
 			continue
 		
@@ -87,8 +87,8 @@ func _clear_items() -> void:
 
 func _on_buy_pressed(id: String) -> void:
 	_play_ui_click()
-	if game_manager and game_manager.shop_manager:
-		if game_manager.shop_manager.purchase(id):
+	if Services.shop_manager:
+		if Services.shop_manager.purchase(id):
 			_show_message("购买成功！")
 			_update_gold()
 
@@ -107,8 +107,8 @@ func _setup_gold_icon() -> void:
 func _update_gold() -> void:
 	if not visible:
 		return
-	if game_manager and game_manager.player_data:
-		gold_label.text = "%d" % game_manager.player_data.gold
+	if Services.player_data:
+		gold_label.text = "%d" % Services.player_data.gold
 
 func _show_message(text: String) -> void:
 	message_label.text = text

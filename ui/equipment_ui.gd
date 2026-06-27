@@ -36,10 +36,9 @@ var _layout_dirty: bool = true
 
 func _ready() -> void:
 	super._ready()
-	if game_manager:
-		equipment_manager = game_manager.equipment_manager
-		game_manager.player_data.stats_changed.connect(_update_top_bar)
-		EventBus.equipment_dropped.connect(_on_equipment_dropped)
+	equipment_manager = Services.equipment_manager
+	Services.player_data.stats_changed.connect(_update_top_bar)
+	EventBus.equipment_dropped.connect(_on_equipment_dropped)
 	if equipment_manager:
 		equipment_manager.equipment_changed.connect(_refresh)
 
@@ -244,10 +243,10 @@ func _clear_detail() -> void:
 
 func _on_upgrade_pressed() -> void:
 	EventBus.play_sfx.emit("ui_click")
-	if selected_equipment == null or game_manager == null or game_manager.player_data == null:
+	if selected_equipment == null or Services.player_data == null:
 		return
 	var cost: int = selected_equipment.get_upgrade_cost()
-	if not game_manager.player_data.spend_gold(cost):
+	if not Services.player_data.spend_gold(cost):
 		EventBus.message_logged.emit("金币不足，无法强化")
 		return
 	selected_equipment.upgrade()
@@ -276,11 +275,11 @@ func _on_unequip_pressed() -> void:
 
 func _on_sell_pressed() -> void:
 	EventBus.play_sfx.emit("ui_click")
-	if selected_equipment == null or equipment_manager == null or game_manager == null:
+	if selected_equipment == null or equipment_manager == null:
 		return
 	var result: Dictionary = equipment_manager.sell_item(selected_equipment)
 	if result.ok:
-		game_manager.player_data.add_gold(result.price)
+		Services.player_data.add_gold(result.price)
 		EventBus.message_logged.emit("出售获得 %d 金币" % result.price)
 	else:
 		EventBus.message_logged.emit("出售失败：%s" % result.reason)
@@ -295,8 +294,8 @@ func _on_auto_equip_pressed() -> void:
 func _update_top_bar() -> void:
 	if not visible:
 		return
-	if game_manager and game_manager.player_data:
-		gold_label.text = "%s" % _format_number(game_manager.player_data.gold)
+	if Services.player_data:
+		gold_label.text = "%s" % _format_number(Services.player_data.gold)
 	if equipment_manager:
 		capacity_label.text = "背包 %d/%d" % [equipment_manager.inventory.size(), EquipmentManager.MAX_INVENTORY]
 
