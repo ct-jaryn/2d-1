@@ -8,6 +8,7 @@ backup/
 # AI 资产生成任务产物（含临时带签名的 OSS URL，不应入库）
 tasks/
 tools/*.png
+tools/*.import
 tools/*.log
 tools/node_modules/
 tools/screenshots/

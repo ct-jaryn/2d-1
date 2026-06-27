@@ -1,12 +1,11 @@
 class_name QuestManager
 extends Node
 
-const QuestDataGD = preload("res://scripts/data/quest_data.gd")
 
 const DAILY_QUEST_COUNT: int = 4
 const REFRESH_COST: int = 100
 
-var quests: Array[QuestDataGD] = []
+var quests: Array[QuestData] = []
 var last_refresh_day: int = -1
 var free_refresh_used: bool = false
 
@@ -70,7 +69,7 @@ func _generate_daily_quests(today: int) -> void:
 	
 	for i: int in range(min(DAILY_QUEST_COUNT, templates.size())):
 		var template: Dictionary = templates[i]
-		var quest: QuestDataGD = QuestDataGD.new(template.id, template.type, template.title, template.description, template.target)
+		var quest: QuestData = QuestData.new(template.id, template.type, template.title, template.description, template.target)
 		quest.reward_gold = template.reward_gold
 		quest.reward_exp = template.reward_exp
 		quest.reward_equipment = template.reward_equipment
@@ -81,14 +80,14 @@ func _generate_daily_quests(today: int) -> void:
 
 func _get_quest_templates() -> Array[Dictionary]:
 	return [
-		{"id": "daily_kills_10", "type": QuestDataGD.Type.KILL_ENEMIES, "title": "清剿小怪", "description": "累计击败 10 个敌人", "target": 10, "reward_gold": 100, "reward_exp": 50, "reward_equipment": false},
-		{"id": "daily_kills_30", "type": QuestDataGD.Type.KILL_ENEMIES, "title": "屠戮者", "description": "累计击败 30 个敌人", "target": 30, "reward_gold": 300, "reward_exp": 150, "reward_equipment": false},
-		{"id": "daily_boss_1", "type": QuestDataGD.Type.DEFEAT_BOSSES, "title": "Boss 猎手", "description": "击败 1 个 Boss", "target": 1, "reward_gold": 500, "reward_exp": 300, "reward_equipment": true},
-		{"id": "daily_boss_3", "type": QuestDataGD.Type.DEFEAT_BOSSES, "title": "Boss 克星", "description": "击败 3 个 Boss", "target": 3, "reward_gold": 1500, "reward_exp": 1000, "reward_equipment": true},
-		{"id": "daily_gold_500", "type": QuestDataGD.Type.EARN_GOLD, "title": "小有积蓄", "description": "累计获得 500 金币", "target": 500, "reward_gold": 200, "reward_exp": 100, "reward_equipment": false},
-		{"id": "daily_gold_2000", "type": QuestDataGD.Type.EARN_GOLD, "title": "富甲一方", "description": "累计获得 2000 金币", "target": 2000, "reward_gold": 800, "reward_exp": 400, "reward_equipment": false},
-		{"id": "daily_level_2", "type": QuestDataGD.Type.LEVEL_UP, "title": "快速成长", "description": "角色升级 2 次", "target": 2, "reward_gold": 400, "reward_exp": 200, "reward_equipment": true},
-		{"id": "daily_skills_10", "type": QuestDataGD.Type.CAST_SKILLS, "title": "技能大师", "description": "累计释放 10 次技能", "target": 10, "reward_gold": 300, "reward_exp": 150, "reward_equipment": false},
+		{"id": "daily_kills_10", "type": QuestData.Type.KILL_ENEMIES, "title": "清剿小怪", "description": "累计击败 10 个敌人", "target": 10, "reward_gold": 100, "reward_exp": 50, "reward_equipment": false},
+		{"id": "daily_kills_30", "type": QuestData.Type.KILL_ENEMIES, "title": "屠戮者", "description": "累计击败 30 个敌人", "target": 30, "reward_gold": 300, "reward_exp": 150, "reward_equipment": false},
+		{"id": "daily_boss_1", "type": QuestData.Type.DEFEAT_BOSSES, "title": "Boss 猎手", "description": "击败 1 个 Boss", "target": 1, "reward_gold": 500, "reward_exp": 300, "reward_equipment": true},
+		{"id": "daily_boss_3", "type": QuestData.Type.DEFEAT_BOSSES, "title": "Boss 克星", "description": "击败 3 个 Boss", "target": 3, "reward_gold": 1500, "reward_exp": 1000, "reward_equipment": true},
+		{"id": "daily_gold_500", "type": QuestData.Type.EARN_GOLD, "title": "小有积蓄", "description": "累计获得 500 金币", "target": 500, "reward_gold": 200, "reward_exp": 100, "reward_equipment": false},
+		{"id": "daily_gold_2000", "type": QuestData.Type.EARN_GOLD, "title": "富甲一方", "description": "累计获得 2000 金币", "target": 2000, "reward_gold": 800, "reward_exp": 400, "reward_equipment": false},
+		{"id": "daily_level_2", "type": QuestData.Type.LEVEL_UP, "title": "快速成长", "description": "角色升级 2 次", "target": 2, "reward_gold": 400, "reward_exp": 200, "reward_equipment": true},
+		{"id": "daily_skills_10", "type": QuestData.Type.CAST_SKILLS, "title": "技能大师", "description": "累计释放 10 次技能", "target": 10, "reward_gold": 300, "reward_exp": 150, "reward_equipment": false},
 	]
 
 func try_manual_refresh() -> bool:
@@ -109,7 +108,7 @@ func try_manual_refresh() -> bool:
 	EventBus.message_logged.emit("消耗 %d 金币刷新任务" % REFRESH_COST)
 	return true
 
-func claim_reward(quest: QuestDataGD) -> bool:
+func claim_reward(quest: QuestData) -> bool:
 	if not quest.completed or quest.claimed:
 		return false
 	
@@ -134,23 +133,23 @@ func claim_reward(quest: QuestDataGD) -> bool:
 	return true
 
 func _on_enemy_defeated(enemy: EnemyData) -> void:
-	_update_quest_progress(QuestDataGD.Type.KILL_ENEMIES, 1)
+	_update_quest_progress(QuestData.Type.KILL_ENEMIES, 1)
 	if enemy.is_boss:
-		_update_quest_progress(QuestDataGD.Type.DEFEAT_BOSSES, 1)
+		_update_quest_progress(QuestData.Type.DEFEAT_BOSSES, 1)
 
 func _on_player_leveled_up(_level: int) -> void:
-	_update_quest_progress(QuestDataGD.Type.LEVEL_UP, 1)
+	_update_quest_progress(QuestData.Type.LEVEL_UP, 1)
 
 func _on_gold_changed(amount: int) -> void:
 	if amount > 0:
-		_update_quest_progress(QuestDataGD.Type.EARN_GOLD, amount)
+		_update_quest_progress(QuestData.Type.EARN_GOLD, amount)
 
 func _on_skill_casted(_skill: SkillData) -> void:
-	_update_quest_progress(QuestDataGD.Type.CAST_SKILLS, 1)
+	_update_quest_progress(QuestData.Type.CAST_SKILLS, 1)
 
 func _update_quest_progress(type: int, amount: int) -> void:
 	var changed: bool = false
-	for quest: QuestDataGD in quests:
+	for quest: QuestData in quests:
 		if quest.type != type or quest.completed:
 			continue
 		if quest.add_progress(amount):
@@ -164,7 +163,7 @@ func _update_quest_progress(type: int, amount: int) -> void:
 
 func get_completed_count() -> int:
 	var count: int = 0
-	for quest: QuestDataGD in quests:
+	for quest: QuestData in quests:
 		if quest.completed:
 			count += 1
 	return count
@@ -193,7 +192,7 @@ func deserialize(data: Dictionary) -> void:
 		return
 	
 	for q: Dictionary in data.get("quests", []):
-		var quest: QuestDataGD = QuestDataGD.new(q.get("id", ""), q.get("type", 0), q.get("title", ""), q.get("description", ""), q.get("target", 1))
+		var quest: QuestData = QuestData.new(q.get("id", ""), q.get("type", 0), q.get("title", ""), q.get("description", ""), q.get("target", 1))
 		quest.deserialize(q)
 		quests.append(quest)
 	

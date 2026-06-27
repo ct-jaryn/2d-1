@@ -8,7 +8,7 @@ extends Node
 const SAVE_PATH: String = "user://savegame.json"
 const TEMP_PATH: String = "user://savegame.json.tmp"
 const BACKUP_PATH: String = "user://savegame.json.bak"
-const CURRENT_VERSION: int = 4
+const CURRENT_VERSION: int = BalanceConfig.SAVE_VERSION
 
 signal save_completed
 signal load_completed
