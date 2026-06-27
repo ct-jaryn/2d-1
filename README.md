@@ -87,7 +87,7 @@ python -m http.server 8765
 ### 3. 运行单元测试
 
 ```bash
-./Godot_v4.3-stable_win64_console.exe --headless --script res://tests/test_runner.gd
+./Godot_v4.3-stable_win64_console.exe --headless res://tests/test_runner.tscn
 ```
 
 ## 中文显示说明
