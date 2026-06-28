@@ -9,6 +9,7 @@ func _ready() -> void:
 	## battle_ui 由场景通过 @export NodePath 接线，无需代码兜底查找。
 	var back_button: Button = _find_back_button()
 	if back_button:
+		back_button.text = tr("UI_BACK")
 		back_button.pressed.connect(_on_back_pressed)
 
 func _find_back_button() -> Button:
@@ -49,16 +50,10 @@ func close_panel() -> void:
 	_on_back_pressed()
 
 func _on_back_pressed() -> void:
-	_play_ui_click()
+	UIHelpers.play_ui_click()
 	hide_panel()
 	if battle_ui:
 		battle_ui.show_battle()
 
 func _refresh() -> void:
 	pass
-
-func _play_ui_click() -> void:
-	EventBus.play_sfx.emit("ui_click")
-
-func _play_ui_hover() -> void:
-	EventBus.play_sfx.emit("ui_hover")

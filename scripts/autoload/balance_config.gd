@@ -137,6 +137,9 @@ const SAVE_VERSION: int = 4
 ## Boss 解锁
 const BOSS_UNLOCK_LEVEL: int = 5
 
+## 关卡上限，防止存档篡改导致敌人数值异常
+const MAX_STAGE: int = 9999
+
 ## 复活
 const REVIVE_DELAY: float = 2.0
 

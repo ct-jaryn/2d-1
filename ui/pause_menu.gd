@@ -1,10 +1,13 @@
 extends CanvasLayer
 
+@onready var title_label: Label = %Title
 @onready var resume_button: Button = %ResumeButton
 @onready var title_button: Button = %TitleButton
 @onready var reset_button: Button = %ResetButton
 @onready var quit_button: Button = %QuitButton
+@onready var bgm_label: Label = %BGMLabel
 @onready var bgm_check: CheckBox = %BGMCheck
+@onready var sfx_label: Label = %SFXLabel
 @onready var sfx_check: CheckBox = %SFXCheck
 
 func _ready() -> void:
@@ -13,6 +16,16 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_WHEN_PAUSED
 	if OS.has_feature("web"):
 		quit_button.visible = false
+
+	title_label.text = tr("UI_PAUSE_TITLE")
+	resume_button.text = tr("UI_CONTINUE")
+	title_button.text = tr("UI_BACK_TO_TITLE")
+	reset_button.text = tr("UI_RESET_SAVE")
+	quit_button.text = tr("UI_EXIT_GAME")
+	bgm_label.text = tr("UI_BGM")
+	bgm_check.text = tr("UI_ON")
+	sfx_label.text = tr("UI_SFX")
+	sfx_check.text = tr("UI_ON")
 
 	resume_button.pressed.connect(_on_resume_pressed)
 	title_button.pressed.connect(_on_title_pressed)

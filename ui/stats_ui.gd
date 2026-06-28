@@ -1,9 +1,11 @@
 extends BaseSubUI
 
+@onready var title_label: Label = %Title
 @onready var stats_text: RichTextLabel = %StatsText
 
 func _ready() -> void:
 	super._ready()
+	title_label.text = tr("UI_STATS_TITLE")
 
 func show_stats() -> void:
 	show_panel()
@@ -12,7 +14,7 @@ func hide_stats() -> void:
 	hide_panel()
 
 func _on_back_pressed() -> void:
-	_play_ui_click()
+	UIHelpers.play_ui_click()
 	hide_stats()
 	if battle_ui:
 		battle_ui.show_battle.call_deferred()
@@ -25,34 +27,48 @@ func _refresh() -> void:
 	var play_time: String = _format_time(pd.play_time_seconds)
 	
 	stats_text.text = """
-[center][b][color=gold]冒险者统计[/color][/b][/center]
+[center][b][color=gold]%s[/color][/b][/center]
 
-[color=#d4b86a]基础属性[/color]
-等级：Lv.%d
-攻击：%d
-防御：%d
-生命：%d / %d
-攻速：%.2f
-暴击：%.1f%%
+[color=#d4b86a]%s[/color]
+%s
+%s
+%s
+%s
+%s
+%s
 
-[color=#d4b86a]战斗记录[/color]
-击杀：%d
-累计金币：%d
-造成伤害：%d
-承受伤害：%d
-死亡：%d
-击败 Boss：%d
-最高关卡：%d
+[color=#d4b86a]%s[/color]
+%s
+%s
+%s
+%s
+%s
+%s
+%s
 
-[color=#d4b86a]其他[/color]
-游戏时间：%s
-当前金币：%d
+[color=#d4b86a]%s[/color]
+%s
+%s
 """ % [
-		pd.level, pd.attack, pd.defense, pd.hp, pd.max_hp,
-		pd.attack_speed, pd.crit_rate * 100.0,
-		pd.total_kills, pd.total_gold_earned, pd.total_damage_dealt,
-		pd.total_damage_taken, pd.death_count, pd.bosses_defeated,
-		pd.highest_stage, play_time, pd.gold
+		tr("UI_STATS_HEADER"),
+		tr("UI_STATS_BASE_ATTR"),
+		tr("UI_STATS_LEVEL") % pd.level,
+		tr("UI_STATS_ATTACK") % pd.attack,
+		tr("UI_STATS_DEFENSE") % pd.defense,
+		tr("UI_STATS_HP") % [pd.hp, pd.max_hp],
+		tr("UI_STATS_ATTACK_SPEED") % pd.attack_speed,
+		tr("UI_STATS_CRIT") % (pd.crit_rate * 100.0),
+		tr("UI_STATS_BATTLE_RECORD"),
+		tr("UI_STATS_KILLS") % pd.total_kills,
+		tr("UI_STATS_TOTAL_GOLD") % UIHelpers.format_number(pd.total_gold_earned),
+		tr("UI_STATS_DAMAGE_DEALT") % UIHelpers.format_number(pd.total_damage_dealt),
+		tr("UI_STATS_DAMAGE_TAKEN") % UIHelpers.format_number(pd.total_damage_taken),
+		tr("UI_STATS_DEATHS") % pd.death_count,
+		tr("UI_STATS_BOSSES") % pd.bosses_defeated,
+		tr("UI_STATS_HIGHEST_STAGE") % pd.highest_stage,
+		tr("UI_STATS_OTHER"),
+		tr("UI_STATS_PLAY_TIME") % play_time,
+		tr("UI_STATS_CURRENT_GOLD") % UIHelpers.format_number(pd.gold)
 	]
 
 func _format_time(seconds: float) -> String:

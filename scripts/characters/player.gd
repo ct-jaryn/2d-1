@@ -132,9 +132,7 @@ func _on_player_attacked(damage: int, is_crit: bool) -> void:
 
 ## 清理进行中的动作 tween，避免与新的攻击/受击叠加造成位置与缩放漂移
 func _kill_action_tween() -> void:
-	if _action_tween != null and _action_tween.is_valid():
-		_action_tween.kill()
-	_action_tween = null
+	_action_tween = NodeUtils.kill_tween(_action_tween)
 
 ## 攻击：先后撤蓄力，再向敌人(右侧)突进，最后回收，配合身体的挤压拉伸增强打击感
 func _lunge_forward(is_crit: bool) -> void:
@@ -188,4 +186,4 @@ func _show_floating_text(damage: int, is_crit: bool, is_player_attacking: bool) 
 		ftm.show_damage(global_position + Vector2(0, -40), damage, false, is_crit)
 
 func _on_hit_flash_timer_timeout() -> void:
-	body.modulate = Color.WHITE
+	NodeUtils.reset_flash(body)

@@ -1,0 +1,29 @@
+{
+  "name": "像素挂机勇者",
+  "short_name": "PixelIdleHero",
+  "version": "1.0.0",
+  "description": "2.5D 像素风自动战斗挂机 RPG",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#242438",
+  "theme_color": "#242438",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "index.icon.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "index.apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "index.png",
+      "sizes": "800x600",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["games"]
+}

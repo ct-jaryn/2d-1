@@ -2,11 +2,11 @@ class_name EquipmentManager
 extends Node
 
 const EQUIPMENT_NAMES: Dictionary = {
-	EquipmentData.Type.WEAPON: ["短剑", "长剑", "精钢剑", "烈焰之刃", "屠龙刀", "圣光剑", "暗影匕首", "雷霆战斧", "传说神器"],
-	EquipmentData.Type.HELMET: ["皮帽", "铁盔", "钢盔", "魔法帽", "龙鳞盔", "圣骑士头盔", "暗影面甲", "王者之冠"],
-	EquipmentData.Type.ARMOR: ["皮甲", "铁甲", "钢甲", "魔法长袍", "龙鳞甲", "圣骑士铠甲", "暗影护甲", "王者战甲"],
-	EquipmentData.Type.BOOTS: ["布鞋", "皮靴", "铁靴", "风行之靴", "龙鳞靴", "圣骑士战靴", "暗影短靴", "王者长靴"],
-	EquipmentData.Type.RING: ["铜戒", "银戒", "金戒", "红宝石戒指", "蓝宝石戒指", "圣光指环", "暗影之戒", "王者戒指"]
+	EquipmentData.Type.WEAPON: ["UI_EQUIPMENT_NAME_WEAPON_0", "UI_EQUIPMENT_NAME_WEAPON_1", "UI_EQUIPMENT_NAME_WEAPON_2", "UI_EQUIPMENT_NAME_WEAPON_3", "UI_EQUIPMENT_NAME_WEAPON_4", "UI_EQUIPMENT_NAME_WEAPON_5", "UI_EQUIPMENT_NAME_WEAPON_6", "UI_EQUIPMENT_NAME_WEAPON_7", "UI_EQUIPMENT_NAME_WEAPON_8"],
+	EquipmentData.Type.HELMET: ["UI_EQUIPMENT_NAME_HELMET_0", "UI_EQUIPMENT_NAME_HELMET_1", "UI_EQUIPMENT_NAME_HELMET_2", "UI_EQUIPMENT_NAME_HELMET_3", "UI_EQUIPMENT_NAME_HELMET_4", "UI_EQUIPMENT_NAME_HELMET_5", "UI_EQUIPMENT_NAME_HELMET_6", "UI_EQUIPMENT_NAME_HELMET_7"],
+	EquipmentData.Type.ARMOR: ["UI_EQUIPMENT_NAME_ARMOR_0", "UI_EQUIPMENT_NAME_ARMOR_1", "UI_EQUIPMENT_NAME_ARMOR_2", "UI_EQUIPMENT_NAME_ARMOR_3", "UI_EQUIPMENT_NAME_ARMOR_4", "UI_EQUIPMENT_NAME_ARMOR_5", "UI_EQUIPMENT_NAME_ARMOR_6", "UI_EQUIPMENT_NAME_ARMOR_7"],
+	EquipmentData.Type.BOOTS: ["UI_EQUIPMENT_NAME_BOOTS_0", "UI_EQUIPMENT_NAME_BOOTS_1", "UI_EQUIPMENT_NAME_BOOTS_2", "UI_EQUIPMENT_NAME_BOOTS_3", "UI_EQUIPMENT_NAME_BOOTS_4", "UI_EQUIPMENT_NAME_BOOTS_5", "UI_EQUIPMENT_NAME_BOOTS_6", "UI_EQUIPMENT_NAME_BOOTS_7"],
+	EquipmentData.Type.RING: ["UI_EQUIPMENT_NAME_RING_0", "UI_EQUIPMENT_NAME_RING_1", "UI_EQUIPMENT_NAME_RING_2", "UI_EQUIPMENT_NAME_RING_3", "UI_EQUIPMENT_NAME_RING_4", "UI_EQUIPMENT_NAME_RING_5", "UI_EQUIPMENT_NAME_RING_6", "UI_EQUIPMENT_NAME_RING_7"]
 }
 
 const RARITY_DROP_WEIGHTS: Dictionary = {
@@ -95,7 +95,7 @@ func unequip_item(type: EquipmentData.Type) -> UnequipResult:
 func sell_item(equip: EquipmentData) -> Dictionary:
 	var idx: int = inventory.find(equip)
 	if idx < 0:
-		return {"ok": false, "price": 0, "reason": "未找到该装备"}
+		return {"ok": false, "price": 0, "reason": tr("UI_EQUIPMENT_NOT_FOUND")}
 	inventory.remove_at(idx)
 	var price: int = _calculate_sell_price(equip)
 	equipment_changed.emit()
@@ -125,7 +125,7 @@ func generate_drop(enemy_level: int, is_boss: bool = false) -> EquipmentData:
 	var type: int = randi() % EquipmentData.Type.size()
 	var names: Array = EQUIPMENT_NAMES[type]
 	var name_index: int = clampi(rarity, 0, names.size() - 1)
-	var equip_name: String = names[name_index]
+	var equip_name: String = tr(names[name_index])
 	
 	var equip: EquipmentData = EquipmentData.new(equip_name, type, rarity, enemy_level)
 	_generate_stats(equip, enemy_level, is_boss)

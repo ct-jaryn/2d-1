@@ -30,3 +30,4 @@ Godot_*/
 
 # Source / raw assets not used in game
 assets/images/animations/*/*_raw.png
+assets/fonts/*.backup

@@ -10,18 +10,34 @@ var _failed: int = 0
 func _ready() -> void:
 	print("=== 开始核心逻辑单元测试 ===")
 	
-	test_player_data_leveling()
-	test_player_data_gold()
-	test_player_data_combat()
-	test_equipment_manager_basic()
-	test_equipment_manager_sell()
-	test_enemy_data_stats()
-	test_enemy_data_scaling()
-	test_boss_mechanics()
-	test_skill_manager()
-	test_save_round_trip()
-	test_save_v3_migration()
-	test_reward_manager_gold_single_count()
+	## headless 测试期间禁用音效，避免 AudioStreamPlaybackWAV 资源在退出时泄漏。
+	## 直接修改字段而非调用 setter，避免把测试状态持久化到用户配置。
+	var audio: AudioManager = Services.audio_manager
+	if audio:
+		audio.sfx_enabled = false
+		audio.bgm_enabled = false
+		audio.stop_bgm()
+	
+	await test_player_data_leveling()
+	await test_player_data_gold()
+	await test_player_data_combat()
+	await test_equipment_manager_basic()
+	await test_equipment_manager_sell()
+	await test_enemy_data_stats()
+	await test_enemy_data_scaling()
+	await test_boss_mechanics()
+	await test_skill_manager()
+	await test_save_round_trip()
+	await test_save_v3_migration()
+	await test_save_checksum_and_validation()
+	await test_save_backup_rotation()
+	await test_stage_manager_validation()
+	await test_battle_manager_attack_iteration_cap()
+	await test_floating_text_pool()
+	await test_death_particles_pool()
+	await test_reward_manager_gold_single_count()
+	await test_shop_manager_purchase()
+	await test_audio_settings_persistence()
 	
 	print("=== 测试结束 ===")
 	print("通过：%d，失败：%d" % [_passed, _failed])
@@ -73,6 +89,7 @@ func test_player_data_combat() -> void:
 func test_equipment_manager_basic() -> void:
 	print("\n[EquipmentManager] 装备穿戴")
 	var em: EquipmentManager = EquipmentManager.new()
+	add_child(em)
 	var equip: EquipmentData = EquipmentData.new("测试剑", EquipmentData.Type.WEAPON, EquipmentData.Rarity.COMMON, 1)
 	em.add_to_inventory(equip)
 	_assert_eq(em.inventory.size(), 1, "装备加入背包")
@@ -82,10 +99,12 @@ func test_equipment_manager_basic() -> void:
 	var result: EquipmentManager.UnequipResult = em.unequip_item(EquipmentData.Type.WEAPON)
 	_assert_eq(result, EquipmentManager.UnequipResult.SUCCESS, "卸下成功")
 	_assert_eq(em.inventory.size(), 1, "卸下后回到背包")
+	em.queue_free()
 
 func test_equipment_manager_sell() -> void:
 	print("\n[EquipmentManager] 装备出售")
 	var em: EquipmentManager = EquipmentManager.new()
+	add_child(em)
 	var equip: EquipmentData = EquipmentData.new("测试剑", EquipmentData.Type.WEAPON, EquipmentData.Rarity.COMMON, 1)
 	em.add_to_inventory(equip)
 	var result: Dictionary = em.sell_item(equip)
@@ -94,6 +113,7 @@ func test_equipment_manager_sell() -> void:
 	_assert_eq(em.inventory.size(), 0, "出售后背包清空")
 	var fail: Dictionary = em.sell_item(equip)
 	_assert(not fail.ok, "出售不存在的装备失败")
+	em.queue_free()
 
 func test_enemy_data_stats() -> void:
 	print("\n[EnemyData] 属性生成")
@@ -197,10 +217,12 @@ func test_save_round_trip() -> void:
 	pd.recalc_stats()
 
 	var em: EquipmentManager = EquipmentManager.new()
+	add_child(em)
 	var equip: EquipmentData = EquipmentData.new("测试剑", EquipmentData.Type.WEAPON, EquipmentData.Rarity.RARE, 3)
 	em.add_to_inventory(equip)
 
 	var stage: StageManager = StageManager.new()
+	add_child(stage)
 	stage.current_enemy_level = 5
 
 	var sm: SaveManager = SaveManager.new()
@@ -218,7 +240,9 @@ func test_save_round_trip() -> void:
 
 	var pd2: PlayerData = PlayerData.new()
 	var em2: EquipmentManager = EquipmentManager.new()
+	add_child(em2)
 	var stage2: StageManager = StageManager.new()
+	add_child(stage2)
 	var load_ok: bool = sm.load_game(pd2, em2, stage2, null, null, null, null)
 	_assert(load_ok, "存档读取成功")
 	_assert_eq(pd2.gold, 1234, "金币往返正确")
@@ -240,6 +264,11 @@ func test_save_round_trip() -> void:
 		if FileAccess.file_exists(backup_path):
 			dir.copy(backup_path, save_path)
 			dir.remove(backup_path)
+
+	em.queue_free()
+	stage.queue_free()
+	em2.queue_free()
+	stage2.queue_free()
 
 func test_save_v3_migration() -> void:
 	print("\n[SaveManager] v3 → v4 存档迁移")
@@ -273,9 +302,13 @@ func test_save_v3_migration() -> void:
 
 	var pd: PlayerData = PlayerData.new()
 	var em: EquipmentManager = EquipmentManager.new()
+	add_child(em)
 	var stage: StageManager = StageManager.new()
+	add_child(stage)
 	var ach: AchievementManager = AchievementManager.new()
+	add_child(ach)
 	var quest: QuestManager = QuestManager.new()
+	add_child(quest)
 	var load_ok: bool = sm.load_game(pd, em, stage, ach, quest, null, null)
 	_assert(load_ok, "v3 存档迁移后加载成功")
 	_assert_eq(pd.gold, 500, "迁移后玩家金币正确")
@@ -296,12 +329,233 @@ func test_save_v3_migration() -> void:
 			dir.copy(backup_path, save_path)
 			dir.remove(backup_path)
 
+	em.queue_free()
+	stage.queue_free()
+	ach.queue_free()
+	quest.queue_free()
+
+func test_save_checksum_and_validation() -> void:
+	print("\n[SaveManager] 校验和与数值校验")
+	var pd: PlayerData = PlayerData.new()
+	pd.level = 5
+	pd.gold = 1000
+	pd.hp = 50
+
+	var em: EquipmentManager = EquipmentManager.new()
+	add_child(em)
+	var stage: StageManager = StageManager.new()
+	add_child(stage)
+
+	var sm: SaveManager = SaveManager.new()
+	var save_path: String = sm.SAVE_PATH
+	var backup_path: String = save_path + ".test_backup"
+
+	var dir: DirAccess = DirAccess.open("user://")
+	if dir != null and FileAccess.file_exists(save_path):
+		dir.copy(save_path, backup_path)
+		dir.remove(save_path)
+
+	_assert(sm.save_game(pd, em, stage, null, null, null, null), "存档写入成功")
+
+	## 篡改金币后加载：校验和应不匹配，但加载仍应成功（防损坏而非防作弊）
+	## 新版存档已加密，需先解密、篡改、再加密写回
+	var file: FileAccess = FileAccess.open(save_path, FileAccess.READ)
+	var encrypted_content: String = file.get_as_text()
+	file.close()
+	var marker_len: int = SaveManager.ENCRYPTION_MARKER.length()
+	var cipher_text: String = encrypted_content.substr(marker_len)
+	var json_text: String = sm._decrypt(cipher_text)
+	json_text = json_text.replace('"gold":1000', '"gold":999999')
+	var tampered_encrypted: String = SaveManager.ENCRYPTION_MARKER + sm._encrypt(json_text)
+	file = FileAccess.open(save_path, FileAccess.WRITE)
+	file.store_string(tampered_encrypted)
+	file.close()
+
+	var pd2: PlayerData = PlayerData.new()
+	var em2: EquipmentManager = EquipmentManager.new()
+	add_child(em2)
+	var stage2: StageManager = StageManager.new()
+	add_child(stage2)
+	var load_ok: bool = sm.load_game(pd2, em2, stage2, null, null, null, null)
+	_assert(load_ok, "篡改后仍可加载（容错）")
+	_assert_eq(pd2.gold, 999999, "篡改金币被加载（演示校验和警告）")
+
+	## 验证非法数值会被钳制
+	var invalid_data: Dictionary = {
+		"version": BalanceConfig.SAVE_VERSION,
+		"timestamp": Time.get_unix_time_from_system(),
+		"player": {"level": -10, "exp": -100, "gold": -5000, "hp": -5},
+		"stage": {"level": -3},
+		"equipment": {"equipped": {}, "inventory": []},
+		"skill": {"energy": -50, "cooldowns": {}, "berserk_timer": -1.0, "berserk_multiplier": -2.0},
+		"shop": {"exp_potion_charges": -5},
+		"achievements": {"completed": []},
+		"quests": {"last_refresh_day": -1, "free_refresh_used": false, "quests": []}
+	}
+	file = FileAccess.open(save_path, FileAccess.WRITE)
+	file.store_string(JSON.stringify(invalid_data))
+	file.close()
+
+	var pd3: PlayerData = PlayerData.new()
+	var em3: EquipmentManager = EquipmentManager.new()
+	add_child(em3)
+	var stage3: StageManager = StageManager.new()
+	add_child(stage3)
+	load_ok = sm.load_game(pd3, em3, stage3, null, null, null, null)
+	_assert(load_ok, "非法数值存档加载成功并被修复")
+	_assert_eq(pd3.level, 1, "非法等级被钳制到 1")
+	_assert_eq(pd3.gold, 0, "非法金币被钳制到 0")
+	_assert_eq(pd3.hp, 1, "非法 HP 被钳制到 1")
+	_assert_eq(stage3.current_enemy_level, 1, "非法关卡被钳制到 1")
+
+	## 清理并恢复备份
+	if dir != null:
+		if FileAccess.file_exists(save_path):
+			dir.remove(save_path)
+		if FileAccess.file_exists(save_path + ".tmp"):
+			dir.remove(save_path + ".tmp")
+		if FileAccess.file_exists(save_path + ".bak"):
+			dir.remove(save_path + ".bak")
+		if FileAccess.file_exists(backup_path):
+			dir.copy(backup_path, save_path)
+			dir.remove(backup_path)
+
+	em.queue_free()
+	stage.queue_free()
+	em2.queue_free()
+	stage2.queue_free()
+	em3.queue_free()
+	stage3.queue_free()
+
+func test_save_backup_rotation() -> void:
+	print("\n[SaveManager] 存档备份轮转")
+	var pd: PlayerData = PlayerData.new()
+	var em: EquipmentManager = EquipmentManager.new()
+	add_child(em)
+	var stage: StageManager = StageManager.new()
+	add_child(stage)
+
+	var sm: SaveManager = SaveManager.new()
+	var dir: DirAccess = DirAccess.open("user://")
+
+	## 清理旧备份，避免污染
+	var cleanup_paths: PackedStringArray = [sm.SAVE_PATH, sm.TEMP_PATH]
+	cleanup_paths.append_array(SaveManager.BACKUP_PATHS)
+	for path: String in cleanup_paths:
+		if FileAccess.file_exists(path):
+			dir.remove(path)
+
+	## 连续保存 4 次（首次无旧存档可备份），应生成 .bak、.bak1、.bak2 三份历史备份
+	for i: int in range(4):
+		pd.gold = i * 100
+		_assert(sm.save_game(pd, em, stage, null, null, null, null), "第 %d 次存档成功" % (i + 1))
+
+	for path: String in SaveManager.BACKUP_PATHS:
+		_assert(FileAccess.file_exists(path), "备份文件存在：%s" % path)
+
+	## 清理
+	cleanup_paths = [sm.SAVE_PATH, sm.TEMP_PATH]
+	cleanup_paths.append_array(SaveManager.BACKUP_PATHS)
+	for path: String in cleanup_paths:
+		if FileAccess.file_exists(path):
+			dir.remove(path)
+
+	em.queue_free()
+	stage.queue_free()
+
+func test_stage_manager_validation() -> void:
+	print("\n[StageManager] 关卡数值校验")
+	var stage: StageManager = StageManager.new()
+	add_child(stage)
+	stage.deserialize({"level": -5})
+	_assert_eq(stage.current_enemy_level, 1, "负关卡被钳制到 1")
+	stage.deserialize({"level": 999999})
+	_assert_eq(stage.current_enemy_level, BalanceConfig.MAX_STAGE, "超上限关卡被钳制到 MAX_STAGE")
+	stage.queue_free()
+
+func test_battle_manager_attack_iteration_cap() -> void:
+	print("\n[BattleManager] 攻击循环迭代上限")
+	var pd: PlayerData = PlayerData.new()
+	pd.crit_rate = 0.0
+	pd.attack_speed = 100.0  ## 远超正常上限，验证单帧不会无限结算
+
+	var enemy: EnemyData = EnemyData.new("史莱姆", 1, false)
+	enemy.max_hp = 99999
+	enemy.hp = enemy.max_hp
+
+	var bm: BattleManager = BattleManager.new()
+	add_child(bm)
+	bm.player_data = pd
+	bm.start_battle(enemy)
+	bm.player_attack_timer = 10.0
+
+	var initial_hp: int = enemy.hp
+	bm._process(1.0)
+	var expected_damage: int = 5 * maxi(1, pd.attack - enemy.defense)
+	_assert_eq(initial_hp - enemy.hp, expected_damage, "单帧攻击次数被限制为 MAX_ATTACK_ITERATIONS")
+	bm.queue_free()
+
+func test_floating_text_pool() -> void:
+	print("\n[FloatingTextManager] 飘字对象池")
+	var ftm: FloatingTextManager = FloatingTextManager.new()
+	add_child(ftm)
+
+	## 连续创建未超过池容量，应全部从池中取出
+	for i: int in range(5):
+		ftm.show_damage(Vector2.ZERO, i + 1, true, false)
+	_assert_eq(ftm._active.size(), 5, "活跃飘字数量等于创建数")
+	_assert_eq(ftm._pool.size(), ftm.POOL_SIZE - 5, "池内剩余数量正确")
+
+	## 超过池容量时，应复用最旧的活跃对象而非无限增长
+	for i: int in range(ftm.POOL_SIZE + 10):
+		ftm.show_damage(Vector2.ZERO, i + 1, true, false)
+	_assert_eq(ftm._active.size(), ftm.POOL_SIZE, "活跃飘字不超过池容量")
+	_assert(ftm._pool.is_empty(), "池被耗尽时无剩余对象")
+
+	## 立即释放，避免测试退出时队列释放尚未执行导致泄漏报告
+	ftm.free()
+
+func test_death_particles_pool() -> void:
+	print("\n[DeathParticles] 死亡粒子对象池")
+	var parent: Node = Node.new()
+	add_child(parent)
+
+	## 生成 3 个粒子
+	for i: int in range(3):
+		DeathParticles.spawn(parent, Vector2.ZERO)
+	_assert_eq(parent.get_child_count(), 3, "生成 3 个粒子")
+
+	## 等待粒子生命周期 + 回收延时后，粒子应自动回到对象池
+	var scene: PackedScene = DeathParticles.DeathParticlesScene
+	var temp_particle: CPUParticles2D = scene.instantiate()
+	var particle_lifetime: float = temp_particle.lifetime
+	temp_particle.free()
+	await get_tree().create_timer(particle_lifetime + 0.6).timeout
+	_assert_eq(parent.get_child_count(), 0, "粒子生命周期结束后从父节点移除")
+	_assert_eq(DeathParticles._pool.size(), 3, "粒子回收到对象池")
+
+	## 再次生成应复用池中对象
+	var reused: CPUParticles2D = DeathParticles.spawn(parent, Vector2.ZERO)
+	_assert_eq(DeathParticles._pool.size(), 2, "复用池中粒子后池数量减少")
+	_assert_eq(parent.get_child_count(), 1, "复用粒子已挂回父节点")
+
+	## 清理静态对象池，避免 headless 退出时泄漏
+	for p: CPUParticles2D in parent.get_children():
+		p.free()
+	for p: CPUParticles2D in DeathParticles._pool:
+		p.free()
+	DeathParticles._pool.clear()
+
+	parent.free()
+
 func test_reward_manager_gold_single_count() -> void:
 	print("\n[RewardManager] 击败敌人金币只累计一次")
 	var pd: PlayerData = PlayerData.new()
 	var stage: StageManager = StageManager.new()
+	add_child(stage)
 	stage.current_enemy_level = 1
 	var rm: RewardManager = RewardManager.new()
+	add_child(rm)
 	rm.player_data = pd
 	rm.stage_manager = stage
 	rm.equipment_manager = null
@@ -312,3 +566,72 @@ func test_reward_manager_gold_single_count() -> void:
 	rm._on_enemy_defeated(enemy)
 	## add_gold 内部已累加 total_gold_earned，reward_manager 不得再次累加，否则翻倍
 	_assert_eq(pd.total_gold_earned, gold_before + enemy.gold_reward, "累计金币只增加一次掉落金币")
+	stage.queue_free()
+	rm.queue_free()
+
+func test_shop_manager_purchase() -> void:
+	print("\n[ShopManager] 购买原子性")
+	var pd: PlayerData = PlayerData.new()
+	pd.add_gold(1000)
+	pd.max_hp = 100
+	pd.hp = 30
+
+	var shop: ShopManager = ShopManager.new()
+	add_child(shop)
+	shop.player_data = pd
+
+	## 成功购买生命药水：扣款并恢复生命
+	var gold_before: int = pd.gold
+	_assert(shop.purchase("health_potion"), "生命药水购买成功")
+	_assert_eq(pd.gold, gold_before - 50, "购买后金币正确扣减")
+	_assert(pd.hp > 30, "生命药水生效")
+
+	## 满血时再次购买应失败且不扣款
+	pd.hp = pd.max_hp
+	gold_before = pd.gold
+	_assert(not shop.purchase("health_potion"), "满血时购买失败")
+	_assert_eq(pd.gold, gold_before, "前置校验失败时不扣款")
+
+	## 金币不足时购买应失败
+	pd.gold = 10
+	_assert(not shop.purchase("attack_boost"), "金币不足时购买失败")
+
+	shop.queue_free()
+
+func test_audio_settings_persistence() -> void:
+	print("\n[AudioManager] 音频设置持久化")
+	var scene: PackedScene = load("res://scenes/audio_manager.tscn")
+	var audio: AudioManager = scene.instantiate() as AudioManager
+	add_child(audio)
+
+	## 先写入非默认状态（关闭不会触发播放，适合 headless 测试）
+	audio.set_bgm_enabled(false)
+	audio.set_sfx_enabled(true)
+	_assert_eq(audio.bgm_enabled, false, "BGM 已关闭")
+	_assert_eq(audio.sfx_enabled, true, "SFX 已开启")
+
+	## 新建实例模拟重启后读取配置
+	var audio2: AudioManager = scene.instantiate() as AudioManager
+	add_child(audio2)
+	_assert_eq(audio2.bgm_enabled, false, "重启后 BGM 保持关闭")
+	_assert_eq(audio2.sfx_enabled, true, "重启后 SFX 保持开启")
+
+	## 通过直接字段赋值 + 保存来恢复默认，避免 headless 下播放 BGM 产生音频泄漏
+	audio2.bgm_enabled = true
+	audio2.sfx_enabled = true
+	audio2._save_settings()
+
+	## 再次新建实例验证已恢复默认
+	var audio3: AudioManager = scene.instantiate() as AudioManager
+	add_child(audio3)
+	_assert_eq(audio3.bgm_enabled, true, "BGM 恢复默认")
+	_assert_eq(audio3.sfx_enabled, true, "SFX 恢复默认")
+
+	## 清理测试配置文件，避免污染用户设置
+	var settings_path: String = audio3.SETTINGS_PATH
+	if FileAccess.file_exists(settings_path):
+		DirAccess.remove_absolute(settings_path)
+
+	audio.queue_free()
+	audio2.queue_free()
+	audio3.queue_free()

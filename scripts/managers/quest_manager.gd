@@ -76,18 +76,18 @@ func _generate_daily_quests(today: int) -> void:
 		quests.append(quest)
 	
 	EventBus.daily_quests_refreshed.emit()
-	EventBus.message_logged.emit("今日任务已刷新")
+	EventBus.message_logged.emit(tr("UI_QUEST_REFRESHED"))
 
 func _get_quest_templates() -> Array[Dictionary]:
 	return [
-		{"id": "daily_kills_10", "type": QuestData.Type.KILL_ENEMIES, "title": "清剿小怪", "description": "累计击败 10 个敌人", "target": 10, "reward_gold": 100, "reward_exp": 50, "reward_equipment": false},
-		{"id": "daily_kills_30", "type": QuestData.Type.KILL_ENEMIES, "title": "屠戮者", "description": "累计击败 30 个敌人", "target": 30, "reward_gold": 300, "reward_exp": 150, "reward_equipment": false},
-		{"id": "daily_boss_1", "type": QuestData.Type.DEFEAT_BOSSES, "title": "Boss 猎手", "description": "击败 1 个 Boss", "target": 1, "reward_gold": 500, "reward_exp": 300, "reward_equipment": true},
-		{"id": "daily_boss_3", "type": QuestData.Type.DEFEAT_BOSSES, "title": "Boss 克星", "description": "击败 3 个 Boss", "target": 3, "reward_gold": 1500, "reward_exp": 1000, "reward_equipment": true},
-		{"id": "daily_gold_500", "type": QuestData.Type.EARN_GOLD, "title": "小有积蓄", "description": "累计获得 500 金币", "target": 500, "reward_gold": 200, "reward_exp": 100, "reward_equipment": false},
-		{"id": "daily_gold_2000", "type": QuestData.Type.EARN_GOLD, "title": "富甲一方", "description": "累计获得 2000 金币", "target": 2000, "reward_gold": 800, "reward_exp": 400, "reward_equipment": false},
-		{"id": "daily_level_2", "type": QuestData.Type.LEVEL_UP, "title": "快速成长", "description": "角色升级 2 次", "target": 2, "reward_gold": 400, "reward_exp": 200, "reward_equipment": true},
-		{"id": "daily_skills_10", "type": QuestData.Type.CAST_SKILLS, "title": "技能大师", "description": "累计释放 10 次技能", "target": 10, "reward_gold": 300, "reward_exp": 150, "reward_equipment": false},
+		{"id": "daily_kills_10", "type": QuestData.Type.KILL_ENEMIES, "title": "UI_QUEST_DAILY_KILLS_10_TITLE", "description": "UI_QUEST_DAILY_KILLS_10_DESC", "target": 10, "reward_gold": 100, "reward_exp": 50, "reward_equipment": false},
+		{"id": "daily_kills_30", "type": QuestData.Type.KILL_ENEMIES, "title": "UI_QUEST_DAILY_KILLS_30_TITLE", "description": "UI_QUEST_DAILY_KILLS_30_DESC", "target": 30, "reward_gold": 300, "reward_exp": 150, "reward_equipment": false},
+		{"id": "daily_boss_1", "type": QuestData.Type.DEFEAT_BOSSES, "title": "UI_QUEST_DAILY_BOSS_1_TITLE", "description": "UI_QUEST_DAILY_BOSS_1_DESC", "target": 1, "reward_gold": 500, "reward_exp": 300, "reward_equipment": true},
+		{"id": "daily_boss_3", "type": QuestData.Type.DEFEAT_BOSSES, "title": "UI_QUEST_DAILY_BOSS_3_TITLE", "description": "UI_QUEST_DAILY_BOSS_3_DESC", "target": 3, "reward_gold": 1500, "reward_exp": 1000, "reward_equipment": true},
+		{"id": "daily_gold_500", "type": QuestData.Type.EARN_GOLD, "title": "UI_QUEST_DAILY_GOLD_500_TITLE", "description": "UI_QUEST_DAILY_GOLD_500_DESC", "target": 500, "reward_gold": 200, "reward_exp": 100, "reward_equipment": false},
+		{"id": "daily_gold_2000", "type": QuestData.Type.EARN_GOLD, "title": "UI_QUEST_DAILY_GOLD_2000_TITLE", "description": "UI_QUEST_DAILY_GOLD_2000_DESC", "target": 2000, "reward_gold": 800, "reward_exp": 400, "reward_equipment": false},
+		{"id": "daily_level_2", "type": QuestData.Type.LEVEL_UP, "title": "UI_QUEST_DAILY_LEVEL_2_TITLE", "description": "UI_QUEST_DAILY_LEVEL_2_DESC", "target": 2, "reward_gold": 400, "reward_exp": 200, "reward_equipment": true},
+		{"id": "daily_skills_10", "type": QuestData.Type.CAST_SKILLS, "title": "UI_QUEST_DAILY_SKILLS_10_TITLE", "description": "UI_QUEST_DAILY_SKILLS_10_DESC", "target": 10, "reward_gold": 300, "reward_exp": 150, "reward_equipment": false},
 	]
 
 func try_manual_refresh() -> bool:
@@ -97,15 +97,15 @@ func try_manual_refresh() -> bool:
 	if not free_refresh_used:
 		free_refresh_used = true
 		_generate_daily_quests(_get_today_index())
-		EventBus.message_logged.emit("免费刷新任务完成")
+		EventBus.message_logged.emit(tr("UI_QUEST_REFRESH_FREE_DONE"))
 		return true
 	
 	if not player_data.spend_gold(REFRESH_COST):
-		EventBus.message_logged.emit("金币不足，刷新任务需要 %d 金币" % REFRESH_COST)
+		EventBus.message_logged.emit(tr("UI_QUEST_REFRESH_NO_GOLD") % REFRESH_COST)
 		return false
 	
 	_generate_daily_quests(_get_today_index())
-	EventBus.message_logged.emit("消耗 %d 金币刷新任务" % REFRESH_COST)
+	EventBus.message_logged.emit(tr("UI_QUEST_REFRESH_SPENT") % REFRESH_COST)
 	return true
 
 func claim_reward(quest: QuestData) -> bool:
@@ -124,11 +124,11 @@ func claim_reward(quest: QuestData) -> bool:
 		var equip: EquipmentData = equipment_manager.generate_drop(stage_manager.current_enemy_level, false)
 		if equipment_manager.add_to_inventory(equip):
 			EventBus.equipment_dropped.emit(equip)
-			EventBus.message_logged.emit("任务奖励：%s" % equip.get_display_name())
+			EventBus.message_logged.emit(tr("UI_QUEST_REWARD_EQUIP_LOG") % equip.get_display_name())
 		else:
-			EventBus.message_logged.emit("背包已满，任务装备奖励丢失")
+			EventBus.message_logged.emit(tr("UI_QUEST_BAG_FULL_LOST"))
 	
-	EventBus.message_logged.emit("领取任务奖励：%s" % quest.get_reward_text())
+	EventBus.message_logged.emit(tr("UI_QUEST_REWARD_CLAIMED_LOG") % quest.get_reward_text())
 	EventBus.quest_updated.emit(quest)
 	return true
 
@@ -154,7 +154,7 @@ func _update_quest_progress(type: int, amount: int) -> void:
 			continue
 		if quest.add_progress(amount):
 			EventBus.quest_completed.emit(quest)
-			EventBus.message_logged.emit("任务完成：%s！" % quest.title)
+			EventBus.message_logged.emit(tr("UI_QUEST_COMPLETED_LOG") % tr(quest.title))
 		changed = true
 		EventBus.quest_updated.emit(quest)
 	

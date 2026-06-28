@@ -40,7 +40,7 @@ func _process_queue() -> void:
 		return
 	_is_showing = true
 	var achievement: AchievementData = _queue.pop_front()
-	title_label.text = "成就解锁"
+	title_label.text = tr("UI_ACHIEVEMENT_UNLOCKED")
 	name_label.text = achievement.name
 	reward_label.text = achievement.get_reward_text()
 

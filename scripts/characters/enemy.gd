@@ -90,12 +90,10 @@ func _on_player_attacked(_damage: int, _is_crit: bool) -> void:
 
 ## 清理进行中的动作 tween，避免叠加造成位置与缩放漂移
 func _kill_action_tween() -> void:
-	if _action_tween != null and _action_tween.is_valid():
-		_action_tween.kill()
-	_action_tween = null
+	_action_tween = NodeUtils.kill_tween(_action_tween)
 
 func _on_hit_flash_timer_timeout() -> void:
-	body.modulate = Color.WHITE
+	NodeUtils.reset_flash(body)
 
 func _on_enemy_died(_enemy: EnemyData) -> void:
 	DeathParticles.spawn(get_tree().current_scene, global_position)
@@ -106,8 +104,7 @@ func _on_enemy_died(_enemy: EnemyData) -> void:
 	hp_bar.visible = false
 	## 停止受击闪烁定时器，避免其回调把 modulate 重置为白色打断死亡淡出
 	hit_flash.stop()
-	if _death_tween != null and _death_tween.is_valid():
-		_death_tween.kill()
+	_death_tween = NodeUtils.kill_tween(_death_tween)
 	_death_tween = create_tween()
 	_death_tween.tween_property(body, "modulate", Color(1, 1, 1, 0), 0.5)
 	_death_tween.tween_callback(func() -> void: shadow.visible = false)

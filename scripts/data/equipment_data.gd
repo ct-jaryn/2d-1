@@ -24,18 +24,18 @@ const RARITY_COLORS: Dictionary = {
 }
 
 const RARITY_NAMES: Dictionary = {
-	Rarity.COMMON: "普通",
-	Rarity.RARE: "稀有",
-	Rarity.EPIC: "史诗",
-	Rarity.LEGENDARY: "传说"
+	Rarity.COMMON: "UI_EQUIPMENT_RARITY_COMMON",
+	Rarity.RARE: "UI_EQUIPMENT_RARITY_RARE",
+	Rarity.EPIC: "UI_EQUIPMENT_RARITY_EPIC",
+	Rarity.LEGENDARY: "UI_EQUIPMENT_RARITY_LEGENDARY"
 }
 
 const TYPE_NAMES: Dictionary = {
-	Type.WEAPON: "武器",
-	Type.HELMET: "头盔",
-	Type.ARMOR: "护甲",
-	Type.BOOTS: "鞋子",
-	Type.RING: "戒指"
+	Type.WEAPON: "UI_EQUIPMENT_TYPE_WEAPON",
+	Type.HELMET: "UI_EQUIPMENT_TYPE_HELMET",
+	Type.ARMOR: "UI_EQUIPMENT_TYPE_ARMOR",
+	Type.BOOTS: "UI_EQUIPMENT_TYPE_BOOTS",
+	Type.RING: "UI_EQUIPMENT_TYPE_RING"
 }
 
 const TYPE_ICONS: Dictionary = {
@@ -67,10 +67,10 @@ func _init(p_name: String = "", p_type: Type = Type.WEAPON, p_rarity: Rarity = R
 	level = p_level
 
 func get_display_name() -> String:
-	return "%s %s" % [RARITY_NAMES[rarity], equip_name]
+	return "%s %s" % [tr(RARITY_NAMES[rarity]), equip_name]
 
 func get_type_name() -> String:
-	return TYPE_NAMES[type]
+	return tr(TYPE_NAMES[type])
 
 func get_rarity_color() -> Color:
 	return RARITY_COLORS[rarity]
@@ -78,19 +78,19 @@ func get_rarity_color() -> Color:
 func get_stat_text() -> String:
 	var lines: PackedStringArray = []
 	if attack_bonus != 0:
-		lines.append("攻击 +%d" % attack_bonus)
+		lines.append(tr("UI_EQUIPMENT_STAT_ATTACK") % attack_bonus)
 	if defense_bonus != 0:
-		lines.append("防御 +%d" % defense_bonus)
+		lines.append(tr("UI_EQUIPMENT_STAT_DEFENSE") % defense_bonus)
 	if max_hp_bonus != 0:
-		lines.append("生命 +%d" % max_hp_bonus)
+		lines.append(tr("UI_EQUIPMENT_STAT_HP") % max_hp_bonus)
 	if attack_speed_bonus != 0.0:
-		lines.append("攻速 +%.2f" % attack_speed_bonus)
+		lines.append(tr("UI_EQUIPMENT_STAT_ATTACK_SPEED") % attack_speed_bonus)
 	if crit_rate_bonus != 0.0:
-		lines.append("暴击 +%.1f%%" % (crit_rate_bonus * 100.0))
+		lines.append(tr("UI_EQUIPMENT_STAT_CRIT") % (crit_rate_bonus * 100.0))
 	if gold_bonus_percent != 0.0:
-		lines.append("金币 +%.0f%%" % gold_bonus_percent)
+		lines.append(tr("UI_EQUIPMENT_STAT_GOLD_BONUS") % gold_bonus_percent)
 	if exp_bonus_percent != 0.0:
-		lines.append("经验 +%.0f%%" % exp_bonus_percent)
+		lines.append(tr("UI_EQUIPMENT_STAT_EXP_BONUS") % exp_bonus_percent)
 	return "\n".join(lines)
 
 func get_upgrade_cost() -> int:

@@ -20,6 +20,9 @@ var player_attack_timer: float = 0.0
 var enemy_attack_timer: float = 0.0
 var boss_mechanics: BossMechanics = null
 
+## 单帧攻击结算最大次数，防止低帧率/极高速下出现卡顿或异常Burst
+const MAX_ATTACK_ITERATIONS: int = 5
+
 signal enemy_died(enemy: EnemyData)
 signal player_died
 signal player_attacked(damage: int, is_crit: bool)
@@ -28,6 +31,11 @@ signal battle_started(enemy: EnemyData)
 
 func _ready() -> void:
 	Services.battle_manager = self
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		if Services.battle_manager == self:
+			Services.battle_manager = null
 
 func start_battle(p_enemy: EnemyData, p_boss_mechanics: BossMechanics = null) -> void:
 	enemy_data = p_enemy
@@ -53,14 +61,18 @@ func _process(delta: float) -> void:
 	enemy_attack_timer += delta
 
 	var player_interval: float = 1.0 / maxf(player_data.attack_speed, 0.001)
-	while player_attack_timer >= player_interval:
+	var player_iterations: int = 0
+	while player_attack_timer >= player_interval and player_iterations < MAX_ATTACK_ITERATIONS:
 		player_attack_timer -= player_interval
 		_player_attack()
+		player_iterations += 1
 
 	var enemy_interval: float = 1.0 / maxf(enemy_data.attack_speed, 0.001)
-	while enemy_attack_timer >= enemy_interval:
+	var enemy_iterations: int = 0
+	while enemy_attack_timer >= enemy_interval and enemy_iterations < MAX_ATTACK_ITERATIONS:
 		enemy_attack_timer -= enemy_interval
 		_enemy_attack()
+		enemy_iterations += 1
 
 func deal_damage_to_enemy(damage: int, is_crit: bool = false, emit_feedback: bool = true) -> int:
 	"""供技能调用，统一结算对敌人伤害并分发事件。"""

@@ -64,9 +64,18 @@ func _connect_events() -> void:
 	## 战斗死亡由 BattleManager 直发，此处直接处理复活逻辑。
 	if battle_manager:
 		battle_manager.player_died.connect(_on_player_died)
-	## 装备变动 → 重算玩家属性
+	## 装备变动 → 重算玩家属性，并即时存档
 	if equipment_manager:
 		equipment_manager.equipment_changed.connect(_on_equipment_changed)
+	## 商店购买成功后即时存档
+	if shop_manager:
+		shop_manager.item_purchased.connect(_save_game)
+	## Boss 击败后即时存档；普通敌人死亡走定时存档，避免频繁写盘
+	if battle_manager:
+		battle_manager.enemy_died.connect(_on_enemy_defeated_save)
+	## 升级即时存档
+	if player_data:
+		player_data.leveled_up.connect(_save_game)
 	## Boss 机制事件仅用于日志反馈
 	EventBus.boss_healed.connect(_on_boss_healed)
 	EventBus.boss_berserk.connect(_on_boss_berserk)
@@ -86,10 +95,10 @@ func _load_save() -> void:
 		return
 	if save_manager.has_save():
 		if save_manager.load_game(player_data, equipment_manager, stage_manager, achievement_manager, quest_manager, skill_manager, shop_manager):
-			EventBus.message_logged.emit("已加载存档")
+			EventBus.message_logged.emit(tr("UI_GAME_SAVE_LOADED"))
 			reward_manager.apply_offline_rewards(save_manager.get_last_save_time())
 		else:
-			EventBus.message_logged.emit("存档加载失败，开始新游戏")
+			EventBus.message_logged.emit(tr("UI_GAME_SAVE_LOAD_FAILED"))
 
 func _process(delta: float) -> void:
 	save_timer += delta
@@ -116,7 +125,7 @@ func _on_equipment_changed() -> void:
 
 func _on_player_died() -> void:
 	player_data.death_count += 1
-	EventBus.message_logged.emit("勇者倒下了！正在复活...")
+	EventBus.message_logged.emit(tr("UI_GAME_PLAYER_REVIVE"))
 	await get_tree().create_timer(BalanceConfig.REVIVE_DELAY).timeout
 	if not is_instance_valid(self) or player_data == null or stage_manager == null:
 		return
@@ -129,11 +138,15 @@ func _on_player_died() -> void:
 	if player_node and player_node.has_method("revive"):
 		player_node.revive()
 
+func _on_enemy_defeated_save(enemy: EnemyData) -> void:
+	if enemy != null and enemy.is_boss:
+		_save_game()
+
 func _on_boss_healed(amount: int) -> void:
-	EventBus.message_logged.emit("Boss 恢复了 %d 点生命！" % amount)
+	EventBus.message_logged.emit(tr("UI_BOSS_HEAL") % amount)
 
 func _on_boss_berserk(active: bool) -> void:
 	if active:
-		EventBus.message_logged.emit("Boss 进入狂暴状态！攻速翻倍！")
+		EventBus.message_logged.emit(tr("UI_BOSS_BERSERK_START"))
 	else:
-		EventBus.message_logged.emit("Boss 狂暴结束")
+		EventBus.message_logged.emit(tr("UI_BOSS_BERSERK_END"))

@@ -73,7 +73,7 @@ func _on_enemy_defeated(enemy: EnemyData) -> void:
 		player_data.bosses_defeated += 1
 
 	EventBus.play_sfx.emit("coin")
-	EventBus.message_logged.emit("击败了 %s！EXP +%d  Gold +%d" % [enemy.name, exp_reward, gold_reward])
+	EventBus.message_logged.emit(tr("UI_REWARD_ENEMY_DEFEATED") % [tr("ENEMY_NAME_" + enemy.name), exp_reward, gold_reward])
 
 	if equipment_manager == null:
 		return
@@ -81,9 +81,9 @@ func _on_enemy_defeated(enemy: EnemyData) -> void:
 		var drop: EquipmentData = equipment_manager.generate_drop(enemy.level, enemy.is_boss)
 		if equipment_manager.add_to_inventory(drop):
 			EventBus.equipment_dropped.emit(drop)
-			EventBus.message_logged.emit("掉落：%s" % drop.get_display_name())
+			EventBus.message_logged.emit(tr("UI_REWARD_DROP") % drop.get_display_name())
 		else:
-			EventBus.message_logged.emit("背包已满，掉落丢失了！")
+			EventBus.message_logged.emit(tr("UI_REWARD_BAG_FULL_LOST"))
 
 func apply_offline_rewards(last_save_time: int) -> void:
 	if last_save_time <= 0 or player_data == null:
@@ -109,7 +109,7 @@ func apply_offline_rewards(last_save_time: int) -> void:
 
 	player_data.add_gold(gold_reward)
 	player_data.gain_exp(exp_reward)
-	EventBus.message_logged.emit("离线 %s，获得 %d 金币和 %d 经验" % [_format_time(elapsed), gold_reward, exp_reward])
+	EventBus.message_logged.emit(tr("UI_REWARD_OFFLINE") % [_format_time(elapsed), gold_reward, exp_reward])
 
 func _apply_exp_bonus(exp: int) -> int:
 	## 经验药水由 ShopManager 管理
@@ -123,5 +123,5 @@ func _format_time(seconds: float) -> String:
 	var hours: int = int(seconds) / 3600
 	var minutes: int = (int(seconds) % 3600) / 60
 	if hours > 0:
-		return "%d 小时 %d 分钟" % [hours, minutes]
-	return "%d 分钟" % minutes
+		return tr("UI_TIME_FORMAT_HOURS_MINUTES") % [hours, minutes]
+	return tr("UI_TIME_FORMAT_MINUTES") % minutes

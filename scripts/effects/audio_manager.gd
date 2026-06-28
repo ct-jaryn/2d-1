@@ -17,6 +17,7 @@ const SOUNDS: Dictionary = {
 }
 
 const BGM_PATH: String = "res://assets/sounds/bgm.wav"
+const SETTINGS_PATH: String = "user://audio_settings.cfg"
 
 var bgm_enabled: bool = true
 var sfx_enabled: bool = true
@@ -24,19 +25,35 @@ var _pending_bgm: bool = true
 
 func _ready() -> void:
 	Services.audio_manager = self
-	var bgm_stream: AudioStream = load(BGM_PATH)
-	if bgm_stream:
-		if bgm_stream is AudioStreamWAV:
-			(bgm_stream as AudioStreamWAV).loop_mode = AudioStreamWAV.LOOP_FORWARD
-		elif "loop" in bgm_stream:
-			bgm_stream.loop = true
-		bgm_player.stream = bgm_stream
+	_load_settings()
+	if bgm_player != null:
+		var bgm_stream: AudioStream = load(BGM_PATH)
+		if bgm_stream:
+			if bgm_stream is AudioStreamWAV:
+				(bgm_stream as AudioStreamWAV).loop_mode = AudioStreamWAV.LOOP_FORWARD
+			elif "loop" in bgm_stream:
+				bgm_stream.loop = true
+			bgm_player.stream = bgm_stream
 	_pending_bgm = true
 	_init_sfx_pool()
 	EventBus.play_sfx.connect(play_sfx)
 
+func _load_settings() -> void:
+	var cfg: ConfigFile = ConfigFile.new()
+	if cfg.load(SETTINGS_PATH) != OK:
+		return
+	bgm_enabled = cfg.get_value("audio", "bgm_enabled", true)
+	sfx_enabled = cfg.get_value("audio", "sfx_enabled", true)
+
+func _save_settings() -> void:
+	var cfg: ConfigFile = ConfigFile.new()
+	cfg.set_value("audio", "bgm_enabled", bgm_enabled)
+	cfg.set_value("audio", "sfx_enabled", sfx_enabled)
+	cfg.save(SETTINGS_PATH)
+
 func _init_sfx_pool() -> void:
-	bgm_player.bus = "BGM"
+	if bgm_player != null:
+		bgm_player.bus = "BGM"
 	for i: int in range(SFX_POOL_SIZE):
 		var player: AudioStreamPlayer = AudioStreamPlayer.new()
 		player.name = "SFXPlayer%d" % i
@@ -55,7 +72,7 @@ func play_sfx(name: String) -> void:
 	player.play()
 
 func play_bgm() -> void:
-	if not bgm_enabled:
+	if not bgm_enabled or bgm_player == null:
 		return
 	if not bgm_player.playing:
 		bgm_player.play()
@@ -66,10 +83,12 @@ func try_play_bgm() -> void:
 		_pending_bgm = false
 
 func stop_bgm() -> void:
-	bgm_player.stop()
+	if bgm_player != null:
+		bgm_player.stop()
 
 func set_bgm_enabled(enabled: bool) -> void:
 	bgm_enabled = enabled
+	_save_settings()
 	if enabled:
 		play_bgm()
 	else:
@@ -77,3 +96,4 @@ func set_bgm_enabled(enabled: bool) -> void:
 
 func set_sfx_enabled(enabled: bool) -> void:
 	sfx_enabled = enabled
+	_save_settings()

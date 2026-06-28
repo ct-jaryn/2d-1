@@ -1,5 +1,7 @@
 extends Control
 
+@onready var title_label: Label = %TitleLabel
+@onready var subtitle_label: Label = %SubtitleLabel
 @onready var continue_button: Button = %ContinueButton
 @onready var new_game_button: Button = %NewGameButton
 @onready var exit_button: Button = %ExitButton
@@ -7,9 +9,15 @@ extends Control
 var save_manager: SaveManager = SaveManager.new()
 
 func _ready() -> void:
+	title_label.text = tr("UI_TITLE_GAME_NAME")
+	subtitle_label.text = tr("UI_TITLE_SUBTITLE")
 	continue_button.visible = save_manager.has_save()
 	if OS.has_feature("web"):
 		exit_button.visible = false
+	
+	continue_button.text = tr("UI_TITLE_CONTINUE")
+	new_game_button.text = tr("UI_TITLE_NEW_GAME")
+	exit_button.text = tr("UI_TITLE_EXIT")
 	
 	continue_button.pressed.connect(_on_continue_pressed)
 	new_game_button.pressed.connect(_on_new_game_pressed)

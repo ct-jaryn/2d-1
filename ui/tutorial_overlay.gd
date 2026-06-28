@@ -13,6 +13,7 @@ signal tutorial_finished
 
 func _ready() -> void:
 	visible = false
+	skip_button.text = tr("UI_TUTORIAL_SKIP")
 	next_button.pressed.connect(_next_step)
 	skip_button.pressed.connect(_finish)
 
@@ -29,14 +30,7 @@ func _show_step() -> void:
 	var step: Dictionary = steps[current_step]
 	label.text = step.get("text", "")
 	
-	var target_path: String = step.get("target", "")
-	var target: Control = null
-	if target_path != "":
-		## TutorialOverlay 被添加到 BattleUI 下，目标节点在 BattleUI 内部，所以从父节点查找
-		if get_parent() != null:
-			target = get_parent().get_node_or_null(target_path) as Control
-		if target == null:
-			target = get_node_or_null(target_path) as Control
+	var target: Control = _resolve_target(step.get("target", ""))
 	if target:
 		highlight.visible = true
 		var rect: Rect2 = target.get_global_rect()
@@ -44,7 +38,27 @@ func _show_step() -> void:
 		highlight.size = rect.size + Vector2(8, 8)
 	else:
 		highlight.visible = false
-	next_button.text = "下一步" if current_step < steps.size() - 1 else "开始冒险"
+	
+	## 修复原代码中放在 return 之后的 unreachable 赋值，并本地化
+	var is_last_step: bool = current_step >= steps.size() - 1
+	next_button.text = tr("UI_TUTORIAL_START") if is_last_step else tr("UI_TUTORIAL_NEXT")
+
+func _resolve_target(raw: Variant) -> Control:
+	if raw == null:
+		return null
+	if raw is Control:
+		return raw as Control
+	if raw is String:
+		var target_path: String = raw as String
+		if target_path == "":
+			return null
+		## TutorialOverlay 被添加到 BattleUI 下，目标节点在 BattleUI 内部，所以从父节点查找
+		if get_parent() != null:
+			var found: Control = get_parent().get_node_or_null(target_path) as Control
+			if found != null:
+				return found
+		return get_node_or_null(target_path) as Control
+	return null
 
 func _next_step() -> void:
 	current_step += 1

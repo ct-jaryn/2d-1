@@ -1,0 +1,84 @@
+name: Web Export and Deploy
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Godot 4.3
+        run: |
+          wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q Godot_v4.3-stable_linux.x86_64.zip
+          chmod +x Godot_v4.3-stable_linux.x86_64
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          ./godot --version
+
+      - name: Run headless unit tests
+        working-directory: pixel-idle-hero
+        run: |
+          ../godot --headless --path . res://tests/test_runner.tscn
+
+  export-and-deploy:
+    name: Export Web and Deploy to GitHub Pages
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Godot 4.3 with Web export template
+        run: |
+          wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q Godot_v4.3-stable_linux.x86_64.zip
+          chmod +x Godot_v4.3-stable_linux.x86_64
+          mv Godot_v4.3-stable_linux.x86_64 godot
+
+          wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz -O templates.zip
+          unzip -q templates.zip -d templates
+          mkdir -p ~/.local/share/godot/export_templates/4.3.stable
+          cp templates/web_* ~/.local/share/godot/export_templates/4.3.stable/ || true
+          ./godot --version
+
+      - name: Export Web build
+        working-directory: pixel-idle-hero
+        run: |
+          mkdir -p ../web-export
+          ../godot --headless --path . --export-release "Web" ../web-export/index.html
+
+      - name: Copy PWA assets
+        run: |
+          cp pixel-idle-hero/manifest.json web-export/manifest.json
+          cp pixel-idle-hero/sw.js web-export/sw.js
+
+      - name: Patch index.html for Chinese
+        run: |
+          sed -i 's/<html lang="en">/<html lang="zh-CN">/' web-export/index.html
+          sed -i 's/Your browser does not support the canvas tag./您的浏览器不支持 canvas 标签。/' web-export/index.html
+          sed -i 's/Your browser does not support JavaScript./您的浏览器未启用 JavaScript，无法运行本游戏。/' web-export/index.html
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./web-export
+          force_orphan: true

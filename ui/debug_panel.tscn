@@ -1,0 +1,87 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ui/debug_panel.gd" id="1_debug"]
+
+[node name="DebugPanel" type="CanvasLayer"]
+layer = 100
+script = ExtResource("1_debug")
+
+[node name="Panel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -360.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 10.0
+grow_horizontal = 0
+
+[node name="VBox" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+text = "调试面板 (F12)"
+horizontal_alignment = 1
+
+[node name="FPSLabel" type="Label" parent="Panel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "FPS: 0"
+
+[node name="PlayerLabel" type="Label" parent="Panel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "玩家: --"
+
+[node name="EnemyLabel" type="Label" parent="Panel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "敌人: --"
+
+[node name="StageLabel" type="Label" parent="Panel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "关卡: --"
+
+[node name="Buttons" type="HBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+
+[node name="SaveButton" type="Button" parent="Panel/VBox/Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "存档"
+
+[node name="LoadButton" type="Button" parent="Panel/VBox/Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "读档"
+
+[node name="DeleteButton" type="Button" parent="Panel/VBox/Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "删档"
+
+[node name="GoldButton" type="Button" parent="Panel/VBox/Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "+金币"
+
+[node name="LevelButton" type="Button" parent="Panel/VBox/Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "升级"
+
+[node name="KillButton" type="Button" parent="Panel/VBox/Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "击杀"
+
+[node name="LogText" type="RichTextLabel" parent="Panel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+fit_content = true
+scroll_following = true

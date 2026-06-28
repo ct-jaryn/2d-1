@@ -5,18 +5,18 @@ extends Node
 signal achievement_unlocked(achievement: AchievementData)
 
 const ACHIEVEMENTS: Array[Dictionary] = [
-	{"id": "first_blood", "name": "首杀", "desc": "击败第一个敌人", "type": AchievementData.Type.KILLS, "target": 1, "reward_gold": 50, "reward_attack": 0, "reward_defense": 0},
-	{"id": "seasoned", "name": "身经百战", "desc": "累计击败 50 个敌人", "type": AchievementData.Type.KILLS, "target": 50, "reward_gold": 300, "reward_attack": 2, "reward_defense": 0},
-	{"id": "slayer", "name": "杀戮机器", "desc": "累计击败 200 个敌人", "type": AchievementData.Type.KILLS, "target": 200, "reward_gold": 1000, "reward_attack": 5, "reward_defense": 2},
-	{"id": "novice", "name": "初出茅庐", "desc": "角色达到 Lv.10", "type": AchievementData.Type.LEVEL, "target": 10, "reward_gold": 200, "reward_attack": 1, "reward_defense": 1},
-	{"id": "veteran", "name": "资深勇者", "desc": "角色达到 Lv.30", "type": AchievementData.Type.LEVEL, "target": 30, "reward_gold": 800, "reward_attack": 3, "reward_defense": 3},
-	{"id": "legend", "name": "传说勇者", "desc": "角色达到 Lv.60", "type": AchievementData.Type.LEVEL, "target": 60, "reward_gold": 3000, "reward_attack": 10, "reward_defense": 5},
-	{"id": "wealthy", "name": "小有积蓄", "desc": "累计获得 1000 金币", "type": AchievementData.Type.GOLD, "target": 1000, "reward_gold": 200, "reward_attack": 0, "reward_defense": 0},
-	{"id": "rich", "name": "富甲一方", "desc": "累计获得 10000 金币", "type": AchievementData.Type.GOLD, "target": 10000, "reward_gold": 1000, "reward_attack": 2, "reward_defense": 2},
-	{"id": "boss_hunter", "name": "Boss 猎手", "desc": "累计击败 5 个 Boss", "type": AchievementData.Type.BOSSES, "target": 5, "reward_gold": 1000, "reward_attack": 3, "reward_defense": 0},
-	{"id": "boss_slayer", "name": "Boss 克星", "desc": "累计击败 20 个 Boss", "type": AchievementData.Type.BOSSES, "target": 20, "reward_gold": 5000, "reward_attack": 8, "reward_defense": 5},
-	{"id": "deep_diver", "name": "深渊行者", "desc": "到达第 20 关", "type": AchievementData.Type.STAGE, "target": 20, "reward_gold": 1500, "reward_attack": 4, "reward_defense": 2},
-	{"id": "immortal", "name": "不朽传说", "desc": "到达第 50 关", "type": AchievementData.Type.STAGE, "target": 50, "reward_gold": 8000, "reward_attack": 15, "reward_defense": 10}
+	{"id": "first_blood", "name": "UI_ACHIEVEMENT_FIRST_BLOOD_NAME", "desc": "UI_ACHIEVEMENT_FIRST_BLOOD_DESC", "type": AchievementData.Type.KILLS, "target": 1, "reward_gold": 50, "reward_attack": 0, "reward_defense": 0},
+	{"id": "seasoned", "name": "UI_ACHIEVEMENT_SEASONED_NAME", "desc": "UI_ACHIEVEMENT_SEASONED_DESC", "type": AchievementData.Type.KILLS, "target": 50, "reward_gold": 300, "reward_attack": 2, "reward_defense": 0},
+	{"id": "slayer", "name": "UI_ACHIEVEMENT_SLAYER_NAME", "desc": "UI_ACHIEVEMENT_SLAYER_DESC", "type": AchievementData.Type.KILLS, "target": 200, "reward_gold": 1000, "reward_attack": 5, "reward_defense": 2},
+	{"id": "novice", "name": "UI_ACHIEVEMENT_NOVICE_NAME", "desc": "UI_ACHIEVEMENT_NOVICE_DESC", "type": AchievementData.Type.LEVEL, "target": 10, "reward_gold": 200, "reward_attack": 1, "reward_defense": 1},
+	{"id": "veteran", "name": "UI_ACHIEVEMENT_VETERAN_NAME", "desc": "UI_ACHIEVEMENT_VETERAN_DESC", "type": AchievementData.Type.LEVEL, "target": 30, "reward_gold": 800, "reward_attack": 3, "reward_defense": 3},
+	{"id": "legend", "name": "UI_ACHIEVEMENT_LEGEND_NAME", "desc": "UI_ACHIEVEMENT_LEGEND_DESC", "type": AchievementData.Type.LEVEL, "target": 60, "reward_gold": 3000, "reward_attack": 10, "reward_defense": 5},
+	{"id": "wealthy", "name": "UI_ACHIEVEMENT_WEALTHY_NAME", "desc": "UI_ACHIEVEMENT_WEALTHY_DESC", "type": AchievementData.Type.GOLD, "target": 1000, "reward_gold": 200, "reward_attack": 0, "reward_defense": 0},
+	{"id": "rich", "name": "UI_ACHIEVEMENT_RICH_NAME", "desc": "UI_ACHIEVEMENT_RICH_DESC", "type": AchievementData.Type.GOLD, "target": 10000, "reward_gold": 1000, "reward_attack": 2, "reward_defense": 2},
+	{"id": "boss_hunter", "name": "UI_ACHIEVEMENT_BOSS_HUNTER_NAME", "desc": "UI_ACHIEVEMENT_BOSS_HUNTER_DESC", "type": AchievementData.Type.BOSSES, "target": 5, "reward_gold": 1000, "reward_attack": 3, "reward_defense": 0},
+	{"id": "boss_slayer", "name": "UI_ACHIEVEMENT_BOSS_SLAYER_NAME", "desc": "UI_ACHIEVEMENT_BOSS_SLAYER_DESC", "type": AchievementData.Type.BOSSES, "target": 20, "reward_gold": 5000, "reward_attack": 8, "reward_defense": 5},
+	{"id": "deep_diver", "name": "UI_ACHIEVEMENT_DEEP_DIVER_NAME", "desc": "UI_ACHIEVEMENT_DEEP_DIVER_DESC", "type": AchievementData.Type.STAGE, "target": 20, "reward_gold": 1500, "reward_attack": 4, "reward_defense": 2},
+	{"id": "immortal", "name": "UI_ACHIEVEMENT_IMMORTAL_NAME", "desc": "UI_ACHIEVEMENT_IMMORTAL_DESC", "type": AchievementData.Type.STAGE, "target": 50, "reward_gold": 8000, "reward_attack": 15, "reward_defense": 10}
 ]
 
 var achievements: Array[AchievementData] = []
@@ -68,7 +68,7 @@ func _unlock_achievement(ach: AchievementData) -> void:
 	_apply_reward(ach)
 	achievement_unlocked.emit(ach)
 	EventBus.achievement_unlocked.emit(ach)
-	EventBus.message_logged.emit("成就解锁：%s！%s" % [ach.name, ach.get_reward_text()])
+	EventBus.message_logged.emit(tr("UI_ACHIEVEMENT_UNLOCKED_LOG_FORMAT") % [tr(ach.name), ach.get_reward_text()])
 
 func _apply_reward(ach: AchievementData) -> void:
 	if player_data == null:

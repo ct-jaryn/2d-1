@@ -41,9 +41,9 @@ func _ready() -> void:
 		battle_manager.enemy_died.connect(_on_enemy_died)
 
 func _init_default_skills() -> void:
-	skills.append(SkillData.new("治愈术", SkillData.Type.HEAL, "恢复 %.0f%% 最大生命值" % (BalanceConfig.SKILL_HEAL_PERCENT * 100.0), 15.0, 20, BalanceConfig.SKILL_HEAL_PERCENT))
-	skills.append(SkillData.new("重击", SkillData.Type.HEAVY_HIT, "造成 %.0f%% 攻击伤害" % (BalanceConfig.SKILL_HEAVY_HIT_POWER * 100.0), 10.0, 15, BalanceConfig.SKILL_HEAVY_HIT_POWER))
-	skills.append(SkillData.new("狂暴", SkillData.Type.BERSERK, "%.0f 秒内攻速翻倍" % BalanceConfig.SKILL_BERSERK_DURATION, 30.0, 30, BalanceConfig.SKILL_BERSERK_MULTIPLIER, BalanceConfig.SKILL_BERSERK_DURATION))
+	skills.append(SkillData.new("UI_SKILL_NAME_HEAL", SkillData.Type.HEAL, tr("UI_SKILL_DESC_HEAL") % (BalanceConfig.SKILL_HEAL_PERCENT * 100.0), 15.0, 20, BalanceConfig.SKILL_HEAL_PERCENT))
+	skills.append(SkillData.new("UI_SKILL_NAME_HEAVY_HIT", SkillData.Type.HEAVY_HIT, tr("UI_SKILL_DESC_HEAVY_HIT") % (BalanceConfig.SKILL_HEAVY_HIT_POWER * 100.0), 10.0, 15, BalanceConfig.SKILL_HEAVY_HIT_POWER))
+	skills.append(SkillData.new("UI_SKILL_NAME_BERSERK", SkillData.Type.BERSERK, tr("UI_SKILL_DESC_BERSERK") % BalanceConfig.SKILL_BERSERK_DURATION, 30.0, 30, BalanceConfig.SKILL_BERSERK_MULTIPLIER, BalanceConfig.SKILL_BERSERK_DURATION))
 
 func _process(delta: float) -> void:
 	## 更新技能冷却
@@ -124,7 +124,7 @@ func _cast_heal(skill: SkillData) -> void:
 		var player: Node2D = Services.player_node
 		if player:
 			ftm.show_heal(player.global_position + Vector2(0, -40), heal_amount)
-	EventBus.message_logged.emit("治愈术恢复 %d 点生命" % heal_amount)
+	EventBus.message_logged.emit(tr("UI_SKILL_HEAL_LOG") % heal_amount)
 
 func _cast_heavy_hit(skill: SkillData) -> void:
 	if battle_manager == null or battle_manager.enemy_data == null or player_data == null:
@@ -143,7 +143,7 @@ func _cast_heavy_hit(skill: SkillData) -> void:
 		var enemy: Node2D = Services.enemy_node
 		if enemy:
 			ftm.show_damage(enemy.global_position + Vector2(0, -40), actual, true, true)
-	EventBus.message_logged.emit("重击造成 %d 点伤害" % actual)
+	EventBus.message_logged.emit(tr("UI_SKILL_HEAVY_HIT_LOG") % actual)
 
 func _cast_berserk(skill: SkillData) -> void:
 	if player_data == null:
@@ -152,7 +152,7 @@ func _cast_berserk(skill: SkillData) -> void:
 	berserk_multiplier = skill.power
 	player_data.attack_speed_multiplier = berserk_multiplier
 	player_data.recalc_stats()
-	EventBus.message_logged.emit("狂暴开启！攻击速度翻倍")
+	EventBus.message_logged.emit(tr("UI_SKILL_BERSERK_START"))
 
 func _end_berserk() -> void:
 	if player_data == null:
@@ -160,7 +160,7 @@ func _end_berserk() -> void:
 	berserk_multiplier = 1.0
 	player_data.attack_speed_multiplier = berserk_multiplier
 	player_data.recalc_stats()
-	EventBus.message_logged.emit("狂暴效果结束")
+	EventBus.message_logged.emit(tr("UI_SKILL_BERSERK_END"))
 
 func get_attack_speed_multiplier() -> float:
 	return berserk_multiplier
@@ -185,10 +185,14 @@ func serialize() -> Dictionary:
 	}
 
 func deserialize(data: Dictionary) -> void:
-	energy = int(data.get("energy", 0))
-	berserk_timer = float(data.get("berserk_timer", 0.0))
-	berserk_multiplier = float(data.get("berserk_multiplier", 1.0))
+	energy = clampi(int(data.get("energy", 0)), 0, max_energy)
+	berserk_timer = maxf(0.0, float(data.get("berserk_timer", 0.0)))
+	berserk_multiplier = maxf(1.0, float(data.get("berserk_multiplier", 1.0)))
 	set_cooldowns(data.get("cooldowns", {}))
+	## 过滤掉负值冷却
+	for type: int in cooldowns.keys():
+		if cooldowns[type] < 0.0:
+			cooldowns.erase(type)
 	## 狂暴倍率由 SkillManager 拥有，加载后同步回 PlayerData 的运行时攻速倍率。
 	if player_data != null:
 		player_data.attack_speed_multiplier = berserk_multiplier

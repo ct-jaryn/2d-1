@@ -2,8 +2,6 @@ extends BaseSubUI
 
 const RESPONSIVE_WIDTH_THRESHOLD: int = 900
 
-const GOLD_ICON: Texture2D = preload("res://assets/images/icon_gold.png")
-
 const EQUIPMENT_ICONS: Dictionary = {
 	EquipmentData.Type.WEAPON: preload("res://assets/images/equipment_weapon.png"),
 	EquipmentData.Type.HELMET: preload("res://assets/images/equipment_helmet.png"),
@@ -48,7 +46,7 @@ func _ready() -> void:
 	upgrade_button.pressed.connect(_on_upgrade_pressed)
 	auto_equip_button.pressed.connect(_on_auto_equip_pressed)
 
-	_setup_gold_icon()
+	UIHelpers.add_gold_icon(gold_label)
 
 	get_viewport().size_changed.connect(_apply_responsive_layout)
 	_apply_responsive_layout()
@@ -62,6 +60,7 @@ func hide_equipment() -> void:
 	hide_panel()
 
 func _on_back_pressed() -> void:
+	UIHelpers.play_ui_click()
 	hide_equipment()
 	if battle_ui:
 		battle_ui.show_battle.call_deferred()
@@ -107,7 +106,7 @@ func _refresh_equipped() -> void:
 			## 同一装备对象，但等级/属性可能变化，更新文本
 			var btn: Button = _equipped_buttons[type]
 			if current != null:
-				btn.text = "%s\nLv.%d %s" % [current.equip_name, current.level, EquipmentData.TYPE_NAMES[type]]
+				btn.text = "%s\nLv.%d %s" % [current.equip_name, current.level, current.get_type_name()]
 				btn.add_theme_color_override("font_color", current.get_rarity_color())
 			continue
 		
@@ -125,11 +124,11 @@ func _refresh_equipped() -> void:
 		new_btn.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		if current != null:
 			new_btn.set_meta("equipment", current)
-			new_btn.text = "%s\nLv.%d %s" % [current.equip_name, current.level, EquipmentData.TYPE_NAMES[type]]
+			new_btn.text = "%s\nLv.%d %s" % [current.equip_name, current.level, current.get_type_name()]
 			new_btn.add_theme_color_override("font_color", current.get_rarity_color())
 			new_btn.pressed.connect(_select_equipment.bind(current, true))
 		else:
-			new_btn.text = "未装备\n%s" % EquipmentData.TYPE_NAMES[type]
+			new_btn.text = tr("UI_EQUIPMENT_EMPTY") % tr(EquipmentData.TYPE_NAMES[type])
 			new_btn.disabled = true
 			new_btn.add_theme_color_override("font_color", Color.GRAY)
 		_add_button_interactions(new_btn)
@@ -210,8 +209,8 @@ func _select_equipment(equip: EquipmentData, is_equipped_slot: bool) -> void:
 	detail_title.text = "%s Lv.%d" % [equip.get_display_name(), equip.level]
 	detail_title.add_theme_color_override("font_color", equip.get_rarity_color())
 
-	var stats_text: String = "[color=gray]%s[/color]\n%s" % [EquipmentData.TYPE_NAMES[equip.type], equip.get_stat_text()]
-	stats_text += "\n[color=yellow]战力 %d[/color]" % equip.get_power_score()
+	var stats_text: String = "[color=gray]%s[/color]\n%s" % [equip.get_type_name(), equip.get_stat_text()]
+	stats_text += "\n[color=yellow]" + tr("UI_EQUIPMENT_POWER") % equip.get_power_score() + "[/color]"
 
 	## 与当前同部位装备对比
 	if equipment_manager and not is_equipped_slot:
@@ -219,14 +218,14 @@ func _select_equipment(equip: EquipmentData, is_equipped_slot: bool) -> void:
 		if current:
 			var diff: int = equip.get_power_score() - current.get_power_score()
 			var color: String = "green" if diff > 0 else ("red" if diff < 0 else "gray")
-			stats_text += "\n[color=%s]对比已装备：%s%d[/color]" % [color, "+" if diff >= 0 else "", diff]
+			stats_text += "\n[color=%s]" + tr("UI_EQUIPMENT_COMPARE") % [color, "+" if diff >= 0 else "", diff] + "[/color]"
 
 	detail_stats.text = stats_text
 	detail_panel.visible = true
 	equip_button.visible = not is_equipped_slot
 	unequip_button.visible = is_equipped_slot
 	upgrade_button.visible = true
-	upgrade_button.text = "强化 (%d 金币)" % equip.get_upgrade_cost()
+	upgrade_button.text = tr("UI_EQUIPMENT_UPGRADE_COST") % equip.get_upgrade_cost()
 	sell_button.visible = not is_equipped_slot
 
 func _clear_detail() -> void:
@@ -247,12 +246,12 @@ func _on_upgrade_pressed() -> void:
 		return
 	var cost: int = selected_equipment.get_upgrade_cost()
 	if not Services.player_data.spend_gold(cost):
-		EventBus.message_logged.emit("金币不足，无法强化")
+		EventBus.message_logged.emit(tr("UI_EQUIPMENT_NO_GOLD"))
 		return
 	selected_equipment.upgrade()
 	if equipment_manager:
 		equipment_manager.equipment_changed.emit()
-	EventBus.message_logged.emit("强化成功！%s 提升至 Lv.%d" % [selected_equipment.equip_name, selected_equipment.level])
+	EventBus.message_logged.emit(tr("UI_EQUIPMENT_UPGRADE_SUCCESS") % [selected_equipment.equip_name, selected_equipment.level])
 	var upgraded: EquipmentData = selected_equipment
 	var was_equipped: bool = selected_is_equipped
 	_refresh()
@@ -263,7 +262,7 @@ func _on_equip_pressed() -> void:
 	if selected_equipment == null or equipment_manager == null:
 		return
 	if not equipment_manager.equip_item(selected_equipment):
-		EventBus.message_logged.emit("背包已满，无法替换装备")
+		EventBus.message_logged.emit(tr("UI_EQUIPMENT_BAG_FULL_REPLACE"))
 
 func _on_unequip_pressed() -> void:
 	EventBus.play_sfx.emit("ui_click")
@@ -271,7 +270,7 @@ func _on_unequip_pressed() -> void:
 		return
 	var result: EquipmentManager.UnequipResult = equipment_manager.unequip_item(selected_equipment.type)
 	if result == EquipmentManager.UnequipResult.INVENTORY_FULL:
-		EventBus.message_logged.emit("背包已满，无法卸下装备")
+		EventBus.message_logged.emit(tr("UI_EQUIPMENT_BAG_FULL_UNEQUIP"))
 
 func _on_sell_pressed() -> void:
 	EventBus.play_sfx.emit("ui_click")
@@ -280,40 +279,27 @@ func _on_sell_pressed() -> void:
 	var result: Dictionary = equipment_manager.sell_item(selected_equipment)
 	if result.ok:
 		Services.player_data.add_gold(result.price)
-		EventBus.message_logged.emit("出售获得 %d 金币" % result.price)
+		EventBus.message_logged.emit(tr("UI_EQUIPMENT_SELL_SUCCESS") % result.price)
 	else:
-		EventBus.message_logged.emit("出售失败：%s" % result.reason)
+		EventBus.message_logged.emit(tr("UI_EQUIPMENT_SELL_FAIL") % result.reason)
 
 func _on_auto_equip_pressed() -> void:
 	EventBus.play_sfx.emit("ui_click")
 	if equipment_manager == null:
 		return
 	equipment_manager.auto_equip_best()
-	EventBus.message_logged.emit("已自动装备最佳装备")
+	EventBus.message_logged.emit(tr("UI_EQUIPMENT_AUTO_EQUIP"))
 
 func _update_top_bar() -> void:
 	if not visible:
 		return
 	if Services.player_data:
-		gold_label.text = "%s" % _format_number(Services.player_data.gold)
+		gold_label.text = "%s" % UIHelpers.format_number(Services.player_data.gold)
 	if equipment_manager:
-		capacity_label.text = "背包 %d/%d" % [equipment_manager.inventory.size(), EquipmentManager.MAX_INVENTORY]
+		capacity_label.text = tr("UI_EQUIPMENT_CAPACITY") % [equipment_manager.inventory.size(), EquipmentManager.MAX_INVENTORY]
 
-func _setup_gold_icon() -> void:
-	var icon: TextureRect = TextureRect.new()
-	icon.texture = GOLD_ICON
-	icon.custom_minimum_size = Vector2(20, 20)
-	icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	gold_label.get_parent().add_child(icon)
-	gold_label.get_parent().move_child(icon, gold_label.get_index())
+
 
 func _on_equipment_dropped(_equipment: EquipmentData) -> void:
 	_refresh()
 
-func _format_number(value: int) -> String:
-	if value >= 1000000:
-		return "%dM" % (value / 1000000)
-	elif value >= 1000:
-		return "%dK" % (value / 1000)
-	return str(value)

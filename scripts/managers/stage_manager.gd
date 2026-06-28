@@ -45,15 +45,15 @@ func spawn_normal_enemy() -> void:
 	var enemy: EnemyData = EnemyData.new(_get_enemy_name(current_enemy_level), current_enemy_level, false)
 	battle_manager.start_battle(enemy)
 	EventBus.enemy_spawned.emit(enemy)
-	EventBus.message_logged.emit("遭遇了 Lv.%d %s！" % [enemy.level, enemy.name])
+	EventBus.message_logged.emit(tr("UI_STAGE_ENCOUNTER") % [enemy.level, tr("ENEMY_NAME_" + enemy.name)])
 	_update_background(false)
 
 func challenge_boss() -> bool:
 	if current_enemy_level < boss_unlock_level:
-		EventBus.message_logged.emit("需要通关到第 %d 关才能挑战 Boss！" % boss_unlock_level)
+		EventBus.message_logged.emit(tr("UI_STAGE_BOSS_UNLOCK_REQUIRED") % boss_unlock_level)
 		return false
 	if is_fighting_boss:
-		EventBus.message_logged.emit("已经在挑战 Boss 了！")
+		EventBus.message_logged.emit(tr("UI_STAGE_ALREADY_FIGHTING_BOSS"))
 		return false
 
 	is_fighting_boss = true
@@ -61,7 +61,7 @@ func challenge_boss() -> bool:
 	var mechanics: BossMechanics = BossMechanics.new(enemy)
 	battle_manager.start_battle(enemy, mechanics)
 	EventBus.enemy_spawned.emit(enemy)
-	EventBus.message_logged.emit("挑战 Boss：Lv.%d %s！" % [enemy.level, enemy.name])
+	EventBus.message_logged.emit(tr("UI_STAGE_BOSS_CHALLENGE") % [enemy.level, tr("ENEMY_NAME_" + enemy.name)])
 	_update_background(true)
 	return true
 
@@ -73,7 +73,7 @@ func advance_stage() -> void:
 	spawn_normal_enemy()
 
 func get_stage_display() -> String:
-	return "第 %d 关" % current_enemy_level
+	return tr("UI_STAGE_FORMAT") % current_enemy_level
 
 func _on_enemy_defeated(enemy: EnemyData) -> void:
 	if not enemy.is_boss:
@@ -82,7 +82,7 @@ func _on_enemy_defeated(enemy: EnemyData) -> void:
 			spawn_normal_enemy()
 		return
 
-	EventBus.message_logged.emit("Boss 讨伐成功！进入下一区域！")
+	EventBus.message_logged.emit(tr("UI_STAGE_BOSS_DEFEATED"))
 	advance_stage()
 
 func _get_enemy_name(level: int) -> String:
@@ -98,4 +98,4 @@ func serialize() -> Dictionary:
 	return {"level": current_enemy_level}
 
 func deserialize(data: Dictionary) -> void:
-	current_enemy_level = int(data.get("level", 1))
+	current_enemy_level = clampi(int(data.get("level", 1)), 1, BalanceConfig.MAX_STAGE)

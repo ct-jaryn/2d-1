@@ -1,0 +1,328 @@
+keys,zh,en
+UI_BACK,← 返回,← Back
+UI_ACHIEVEMENT_TITLE,成就,Achievements
+UI_STATS_TITLE,冒险统计,Statistics
+UI_STATS_HEADER,冒险者统计,Adventurer Stats
+UI_STATS_BASE_ATTR,基础属性,Base Attributes
+UI_STATS_LEVEL,等级：Lv.%d,Level: Lv.%d
+UI_STATS_ATTACK,攻击：%d,Attack: %d
+UI_STATS_DEFENSE,防御：%d,Defense: %d
+UI_STATS_HP,生命：%d / %d,HP: %d / %d
+UI_STATS_ATTACK_SPEED,攻速：%.2f,Attack Speed: %.2f
+UI_STATS_CRIT,暴击：%.1f%%,Crit: %.1f%%
+UI_STATS_BATTLE_RECORD,战斗记录,Battle Record
+UI_STATS_KILLS,击杀：%d,Kills: %d
+UI_STATS_TOTAL_GOLD,累计金币：%s,Total Gold: %s
+UI_STATS_DAMAGE_DEALT,造成伤害：%s,Damage Dealt: %s
+UI_STATS_DAMAGE_TAKEN,承受伤害：%s,Damage Taken: %s
+UI_STATS_DEATHS,死亡：%d,Deaths: %d
+UI_STATS_BOSSES,击败 Boss：%d,Bosses: %d
+UI_STATS_HIGHEST_STAGE,最高关卡：%d,Highest Stage: %d
+UI_STATS_OTHER,其他,Other
+UI_STATS_PLAY_TIME,游戏时间：%s,Play Time: %s
+UI_STATS_CURRENT_GOLD,当前金币：%s,Current Gold: %s
+UI_SHOP_TITLE,商店,Shop
+UI_QUEST_TITLE,每日任务,Quests
+UI_QUEST_REFRESH,刷新任务,Refresh
+UI_PAUSE_TITLE,暂 停,Paused
+UI_CONTINUE,继续游戏,Continue
+UI_BACK_TO_TITLE,返回标题,Back to Title
+UI_RESET_SAVE,重置存档,Reset Save
+UI_EXIT_GAME,退出游戏,Exit Game
+UI_BGM,背景音乐,BGM
+UI_SFX,音效,SFX
+UI_ON,开启,On
+UI_EQUIPMENT_TITLE,装备栏,Equipment
+UI_INVENTORY,背包,Inventory
+UI_EQUIPPED,已装备,Equipped
+UI_EQUIP,装备,Equip
+UI_UNEQUIP,卸下,Unequip
+UI_UPGRADE,强化,Upgrade
+UI_SELL,出售,Sell
+UI_AUTO_EQUIP,一键最佳,Auto Equip
+UI_DEBUG_TITLE,调试面板 (F12),Debug (F12)
+UI_DEBUG_PLAYER,玩家: --,Player: --
+UI_DEBUG_ENEMY,敌人: --,Enemy: --
+UI_DEBUG_STAGE,关卡: --,Stage: --
+UI_DEBUG_SAVE,存档,Save
+UI_DEBUG_LOAD,读档,Load
+UI_DEBUG_DELETE,删档,Delete
+UI_DEBUG_GOLD,+金币,+Gold
+UI_DEBUG_LEVEL,升级,Level Up
+UI_DEBUG_KILL,击杀,Kill
+UI_BATTLE_STAGE,第 1 关,Stage 1
+UI_BATTLE_ENERGY,能量,Energy
+UI_BATTLE_ENEMY,敌人,Enemy
+UI_BATTLE_SKILL,技能,Skills
+UI_BATTLE_BOSS,挑战 Boss,Challenge Boss
+UI_BATTLE_BOSS_FIGHTING,Boss 战中,Fighting Boss
+UI_BATTLE_BOSS_UNLOCK,通关 %d 关解锁,Clear %d to Unlock
+UI_BATTLE_EQUIPMENT,装备,Equipment
+UI_BATTLE_SHOP,商店,Shop
+UI_BATTLE_STATS,统计,Stats
+UI_BATTLE_ACHIEVEMENTS,成就,Achievements
+UI_BATTLE_QUESTS,任务,Quests
+UI_BATTLE_LOG,日志,Log
+UI_TITLE_GAME_NAME,像素挂机勇者,Pixel Idle Hero
+UI_TITLE_SUBTITLE,2.5D 像素风自动战斗挂机 RPG,2.5D Pixel Auto Battle RPG
+UI_TITLE_CONTINUE,继续游戏,Continue
+UI_TITLE_NEW_GAME,开始新游戏,New Game
+UI_TITLE_EXIT,退出游戏,Exit
+UI_TUTORIAL_NEXT,下一步,Next
+UI_TUTORIAL_START,开始冒险,Start Adventure
+UI_TUTORIAL_SKIP,跳过,Skip
+UI_ACHIEVEMENT_UNLOCKED,成就解锁,Achievement Unlocked
+UI_ACHIEVEMENT_NAME,成就名称,Achievement Name
+UI_ACHIEVEMENT_REWARD,奖励,Reward
+UI_ACHIEVEMENT_PROGRESS,完成度 %d/%d,Progress %d/%d
+UI_FILTER_ALL,全部,All
+UI_FILTER_COMPLETED,已完成,Completed
+UI_FILTER_INCOMPLETE,未完成,Incomplete
+UI_FILTER_CLAIMABLE,可领取,Claimable
+UI_FILTER_IN_PROGRESS,进行中,In Progress
+UI_QUEST_FILTER_FINISHED,已完成,Finished
+UI_SHOP_BUY,购买,Buy
+UI_SHOP_PURCHASE_SUCCESS,购买成功！,Purchase successful!
+UI_LOG_WELCOME,[b]欢迎进入像素挂机勇者[/b],[b]Welcome to Pixel Idle Hero[/b]
+UI_LOG_TIP_BATTLE,击败敌人 → 获得金币/经验/装备,Defeat enemies → gain gold/exp/equipment
+UI_LOG_TIP_BOSS,挑战 Boss → 进入下一区域,Challenge Boss → advance to next area
+UI_LOG_BOSS_DEFEATED,[color=gold]恭喜！击败了 Boss！[/color],[color=gold]Congratulations! Boss defeated![/color]
+UI_LOG_PLAYER_DAMAGE,你造成 %s%d 点伤害,You deal %s%d damage
+UI_LOG_ENEMY_DAMAGE,敌人造成 %s%d 点伤害,Enemy deals %s%d damage
+UI_LOG_LEVEL_UP,[color=cyan]升级！当前等级 Lv.%d[/color],[color=cyan]Level up! Current Lv.%d[/color]
+UI_LOG_SKILL_CAST,释放技能：[color=aqua]%s[/color],Cast skill: [color=aqua]%s[/color]
+UI_EQUIPMENT_EMPTY,未装备\n%s,Empty\n%s
+UI_EQUIPMENT_CAPACITY,背包 %d/%d,Inventory %d/%d
+UI_EQUIPMENT_POWER,战力 %d,Power %d
+UI_EQUIPMENT_COMPARE,对比已装备：%s%d,Compare equipped: %s%d
+UI_EQUIPMENT_UPGRADE_COST,强化 (%d 金币),Upgrade (%d gold)
+UI_EQUIPMENT_NO_GOLD,金币不足，无法强化,Not enough gold to upgrade
+UI_EQUIPMENT_UPGRADE_SUCCESS,强化成功！%s 提升至 Lv.%d,Upgrade success! %s reached Lv.%d
+UI_EQUIPMENT_BAG_FULL_REPLACE,背包已满，无法替换装备,Inventory full - cannot replace
+UI_EQUIPMENT_BAG_FULL_UNEQUIP,背包已满，无法卸下装备,Inventory full - cannot unequip
+UI_EQUIPMENT_SELL_SUCCESS,出售获得 %d 金币,Sold for %d gold
+UI_EQUIPMENT_SELL_FAIL,出售失败：%s,Sell failed: %s
+UI_EQUIPMENT_AUTO_EQUIP,已自动装备最佳装备,Auto-equipped best gear
+UI_PLAYER_DATA_NO_INIT,玩家数据未初始化,Player data not initialized
+UI_ENEMY_NONE,当前无战斗,No active battle
+UI_STAGE_NONE,关卡数据未初始化,Stage data not initialized
+UI_DEBUG_SAVE_DONE,[调试] 手动存档完成,[Debug] Save done
+UI_DEBUG_LOAD_DONE,[调试] 手动读档完成,[Debug] Load done
+UI_DEBUG_DELETE_DONE,[调试] 存档已删除,[Debug] Save deleted
+UI_DEBUG_GOLD_DONE,[调试] 增加 10000 金币,[Debug] Added 10000 gold
+UI_DEBUG_LEVEL_DONE,[调试] 玩家升级,[Debug] Player leveled up
+UI_DEBUG_KILL_DONE,[调试] 击杀当前敌人,[Debug] Killed current enemy
+UI_TUTORIAL_WELCOME,[center][b]欢迎来到像素挂机勇者[/b][/center]\n这是一款自动战斗挂机 RPG，勇者和敌人会自动攻击。,[center][b]Welcome to Pixel Idle Hero[/b][/center]\nThis is an auto-battle idle RPG.
+UI_TUTORIAL_SKILL,[center]这里是技能栏[/center]\n消耗能量释放技能，数字键 1/2/3 或手柄 A/B/X 可快速施放。,[center]Skill Bar[/center]\nSpend energy to cast skills. Keys 1/2/3 or gamepad A/B/X.
+UI_TUTORIAL_BUTTONS,[center]底部是功能按钮[/center]\n装备(E)、商店(S)、统计(T)、成就(A)、任务(Q)。,"[center]Bottom Buttons[/center]\nEquipment(E), Shop(S), Stats(T), Achievements(A), Quests(Q)."
+UI_TUTORIAL_BOSS,[center]挑战 Boss[/center]\n每 5 关可挑战一次 Boss，通关后进入下一区域。,[center]Challenge Boss[/center]\nEvery 5 stages challenge a Boss to advance.
+UI_LOG_CRIT,[color=yellow]暴击[/color] ,[color=yellow]Crit[/color]
+UI_LOG_ENEMY_CRIT,[color=red]暴击[/color] ,[color=red]Crit[/color]
+UI_STAGE_FORMAT,第 %d 关,Stage %d
+UI_DEBUG_PLAYER_FORMAT,玩家: Lv.%d  HP %d/%d  ATK %d  DEF %d  SPD %.2f  金币 %s,Player: Lv.%d  HP %d/%d  ATK %d  DEF %d  SPD %.2f  Gold %s
+UI_DEBUG_ENEMY_FORMAT,敌人: Lv.%d %s  HP %d/%d  ATK %d  DEF %d  SPD %.2f%s,Enemy: Lv.%d %s  HP %d/%d  ATK %d  DEF %d  SPD %.2f%s
+UI_DEBUG_ENEMY_BOSS, [Boss], [Boss]
+UI_DEBUG_STAGE_FORMAT,关卡: %s,Stage: %s
+UI_QUEST_REWARD_FORMAT,奖励：%s,Reward: %s
+UI_QUEST_CLAIMED,已领取,Claimed
+UI_QUEST_CLAIM,领取,Claim
+UI_QUEST_IN_PROGRESS,进行中,In Progress
+UI_QUEST_REFRESH_COST,刷新 (%d 金币),Refresh (%d gold)
+UI_QUEST_REFRESH_FREE,免费刷新,Free Refresh
+UI_QUEST_REFRESH_FAIL,刷新失败,Refresh failed
+UI_QUEST_CLAIM_SUCCESS,领取成功！,Reward claimed!
+UI_SHOP_PRICE_FORMAT,%s  -  %d 金币,%s  -  %d gold
+UI_EQUIPMENT_RARITY_COMMON,普通,Common
+UI_EQUIPMENT_RARITY_RARE,稀有,Rare
+UI_EQUIPMENT_RARITY_EPIC,史诗,Epic
+UI_EQUIPMENT_RARITY_LEGENDARY,传说,Legendary
+UI_EQUIPMENT_TYPE_WEAPON,武器,Weapon
+UI_EQUIPMENT_TYPE_HELMET,头盔,Helmet
+UI_EQUIPMENT_TYPE_ARMOR,护甲,Armor
+UI_EQUIPMENT_TYPE_BOOTS,鞋子,Boots
+UI_EQUIPMENT_TYPE_RING,戒指,Ring
+UI_EQUIPMENT_STAT_ATTACK,攻击 +%d,ATK +%d
+UI_EQUIPMENT_STAT_DEFENSE,防御 +%d,DEF +%d
+UI_EQUIPMENT_STAT_HP,生命 +%d,HP +%d
+UI_EQUIPMENT_STAT_ATTACK_SPEED,攻速 +%.2f,ATK SPD +%.2f
+UI_EQUIPMENT_STAT_CRIT,暴击 +%.1f%%,CRIT +%.1f%%
+UI_EQUIPMENT_STAT_GOLD_BONUS,金币 +%.0f%%,Gold +%.0f%%
+UI_EQUIPMENT_STAT_EXP_BONUS,经验 +%.0f%%,EXP +%.0f%%
+UI_EQUIPMENT_NOT_FOUND,未找到该装备,Equipment not found
+UI_EQUIPMENT_NAME_WEAPON_0,短剑,Short Sword
+UI_EQUIPMENT_NAME_WEAPON_1,长剑,Long Sword
+UI_EQUIPMENT_NAME_WEAPON_2,精钢剑,Steel Sword
+UI_EQUIPMENT_NAME_WEAPON_3,烈焰之刃,Flame Blade
+UI_EQUIPMENT_NAME_WEAPON_4,屠龙刀,Dragon Slayer
+UI_EQUIPMENT_NAME_WEAPON_5,圣光剑,Holy Sword
+UI_EQUIPMENT_NAME_WEAPON_6,暗影匕首,Shadow Dagger
+UI_EQUIPMENT_NAME_WEAPON_7,雷霆战斧,Thunder Axe
+UI_EQUIPMENT_NAME_WEAPON_8,传说神器,Legendary Relic
+UI_EQUIPMENT_NAME_HELMET_0,皮帽,Leather Cap
+UI_EQUIPMENT_NAME_HELMET_1,铁盔,Iron Helm
+UI_EQUIPMENT_NAME_HELMET_2,钢盔,Steel Helm
+UI_EQUIPMENT_NAME_HELMET_3,魔法帽,Magic Hat
+UI_EQUIPMENT_NAME_HELMET_4,龙鳞盔,Dragon Helm
+UI_EQUIPMENT_NAME_HELMET_5,圣骑士头盔,Paladin Helm
+UI_EQUIPMENT_NAME_HELMET_6,暗影面甲,Shadow Mask
+UI_EQUIPMENT_NAME_HELMET_7,王者之冠,Crown
+UI_EQUIPMENT_NAME_ARMOR_0,皮甲,Leather Armor
+UI_EQUIPMENT_NAME_ARMOR_1,铁甲,Iron Armor
+UI_EQUIPMENT_NAME_ARMOR_2,钢甲,Steel Armor
+UI_EQUIPMENT_NAME_ARMOR_3,魔法长袍,Magic Robe
+UI_EQUIPMENT_NAME_ARMOR_4,龙鳞甲,Dragon Scale
+UI_EQUIPMENT_NAME_ARMOR_5,圣骑士铠甲,Paladin Armor
+UI_EQUIPMENT_NAME_ARMOR_6,暗影护甲,Shadow Armor
+UI_EQUIPMENT_NAME_ARMOR_7,王者战甲,King Armor
+UI_EQUIPMENT_NAME_BOOTS_0,布鞋,Cloth Shoes
+UI_EQUIPMENT_NAME_BOOTS_1,皮靴,Leather Boots
+UI_EQUIPMENT_NAME_BOOTS_2,铁靴,Iron Boots
+UI_EQUIPMENT_NAME_BOOTS_3,风行之靴,Wind Boots
+UI_EQUIPMENT_NAME_BOOTS_4,龙鳞靴,Dragon Boots
+UI_EQUIPMENT_NAME_BOOTS_5,圣骑士战靴,Paladin Boots
+UI_EQUIPMENT_NAME_BOOTS_6,暗影短靴,Shadow Boots
+UI_EQUIPMENT_NAME_BOOTS_7,王者长靴,King Boots
+UI_EQUIPMENT_NAME_RING_0,铜戒,Copper Ring
+UI_EQUIPMENT_NAME_RING_1,银戒,Silver Ring
+UI_EQUIPMENT_NAME_RING_2,金戒,Gold Ring
+UI_EQUIPMENT_NAME_RING_3,红宝石戒指,Ruby Ring
+UI_EQUIPMENT_NAME_RING_4,蓝宝石戒指,Sapphire Ring
+UI_EQUIPMENT_NAME_RING_5,圣光指环,Holy Ring
+UI_EQUIPMENT_NAME_RING_6,暗影之戒,Shadow Ring
+UI_EQUIPMENT_NAME_RING_7,王者戒指,King Ring
+UI_QUEST_TYPE_KILL_ENEMIES,击杀敌人,Kill Enemies
+UI_QUEST_TYPE_DEFEAT_BOSSES,击败 Boss,Defeat Bosses
+UI_QUEST_TYPE_EARN_GOLD,累计金币,Earn Gold
+UI_QUEST_TYPE_LEVEL_UP,角色升级,Level Up
+UI_QUEST_TYPE_CAST_SKILLS,释放技能,Cast Skills
+UI_QUEST_UNKNOWN_TYPE,未知,Unknown
+UI_QUEST_REWARD_GOLD,金币 +%d,Gold +%d
+UI_QUEST_REWARD_EXP,经验 +%d,EXP +%d
+UI_QUEST_REWARD_EQUIPMENT,装备宝箱,Equipment Box
+UI_QUEST_REWARD_NONE,无奖励,No Reward
+UI_QUEST_REFRESHED,今日任务已刷新,Daily quests refreshed
+UI_QUEST_REFRESH_FREE_DONE,免费刷新任务完成,Free refresh completed
+UI_QUEST_REFRESH_NO_GOLD,金币不足，刷新任务需要 %d 金币,Not enough gold (%d needed)
+UI_QUEST_REFRESH_SPENT,消耗 %d 金币刷新任务,Spent %d gold to refresh
+UI_QUEST_REWARD_EQUIP_LOG,任务奖励：%s,Quest reward: %s
+UI_QUEST_BAG_FULL_LOST,背包已满，任务装备奖励丢失,Inventory full - quest equipment lost
+UI_QUEST_REWARD_CLAIMED_LOG,领取任务奖励：%s,Claimed quest reward: %s
+UI_QUEST_COMPLETED_LOG,任务完成：%s！,Quest completed: %s!
+UI_QUEST_DAILY_KILLS_10_TITLE,清剿小怪,Slayer Initiate
+UI_QUEST_DAILY_KILLS_10_DESC,累计击败 10 个敌人,Defeat 10 enemies
+UI_QUEST_DAILY_KILLS_30_TITLE,屠戮者,Slayer
+UI_QUEST_DAILY_KILLS_30_DESC,累计击败 30 个敌人,Defeat 30 enemies
+UI_QUEST_DAILY_BOSS_1_TITLE,Boss 猎手,Boss Hunter
+UI_QUEST_DAILY_BOSS_1_DESC,击败 1 个 Boss,Defeat 1 Boss
+UI_QUEST_DAILY_BOSS_3_TITLE,Boss 克星,Boss Slayer
+UI_QUEST_DAILY_BOSS_3_DESC,击败 3 个 Boss,Defeat 3 Bosses
+UI_QUEST_DAILY_GOLD_500_TITLE,小有积蓄,Saver
+UI_QUEST_DAILY_GOLD_500_DESC,累计获得 500 金币,Earn 500 gold
+UI_QUEST_DAILY_GOLD_2000_TITLE,富甲一方,Tycoon
+UI_QUEST_DAILY_GOLD_2000_DESC,累计获得 2000 金币,Earn 2000 gold
+UI_QUEST_DAILY_LEVEL_2_TITLE,快速成长,Fast Grower
+UI_QUEST_DAILY_LEVEL_2_DESC,角色升级 2 次,Level up 2 times
+UI_QUEST_DAILY_SKILLS_10_TITLE,技能大师,Skill Master
+UI_QUEST_DAILY_SKILLS_10_DESC,累计释放 10 次技能,Cast 10 skills
+UI_ACHIEVEMENT_TYPE_KILLS,击杀,Kills
+UI_ACHIEVEMENT_TYPE_LEVEL,等级,Level
+UI_ACHIEVEMENT_TYPE_GOLD,金币,Gold
+UI_ACHIEVEMENT_TYPE_BOSSES,Boss,Bosses
+UI_ACHIEVEMENT_TYPE_STAGE,关卡,Stage
+UI_ACHIEVEMENT_UNKNOWN_TYPE,未知,Unknown
+UI_ACHIEVEMENT_REWARD_PREFIX,奖励：,Reward: 
+UI_ACHIEVEMENT_REWARD_GOLD,金币 +%d,Gold +%d
+UI_ACHIEVEMENT_REWARD_ATTACK,攻击 +%d,ATK +%d
+UI_ACHIEVEMENT_REWARD_DEFENSE,防御 +%d,DEF +%d
+UI_ACHIEVEMENT_REWARD_NONE,无奖励,No Reward
+UI_ACHIEVEMENT_UNLOCKED_LOG_FORMAT,成就解锁：%s！%s,Achievement unlocked: %s! %s
+UI_ACHIEVEMENT_FIRST_BLOOD_NAME,首杀,First Blood
+UI_ACHIEVEMENT_FIRST_BLOOD_DESC,击败第一个敌人,Defeat your first enemy
+UI_ACHIEVEMENT_SEASONED_NAME,身经百战,Seasoned
+UI_ACHIEVEMENT_SEASONED_DESC,累计击败 50 个敌人,Defeat 50 enemies
+UI_ACHIEVEMENT_SLAYER_NAME,杀戮机器,Slayer
+UI_ACHIEVEMENT_SLAYER_DESC,累计击败 200 个敌人,Defeat 200 enemies
+UI_ACHIEVEMENT_NOVICE_NAME,初出茅庐,Novice
+UI_ACHIEVEMENT_NOVICE_DESC,角色达到 Lv.10,Reach Lv.10
+UI_ACHIEVEMENT_VETERAN_NAME,资深勇者,Veteran
+UI_ACHIEVEMENT_VETERAN_DESC,角色达到 Lv.30,Reach Lv.30
+UI_ACHIEVEMENT_LEGEND_NAME,传说勇者,Legend
+UI_ACHIEVEMENT_LEGEND_DESC,角色达到 Lv.60,Reach Lv.60
+UI_ACHIEVEMENT_WEALTHY_NAME,小有积蓄,Wealthy
+UI_ACHIEVEMENT_WEALTHY_DESC,累计获得 1000 金币,Earn 1000 gold
+UI_ACHIEVEMENT_RICH_NAME,富甲一方,Rich
+UI_ACHIEVEMENT_RICH_DESC,累计获得 10000 金币,Earn 10000 gold
+UI_ACHIEVEMENT_BOSS_HUNTER_NAME,Boss 猎手,Boss Hunter
+UI_ACHIEVEMENT_BOSS_HUNTER_DESC,累计击败 5 个 Boss,Defeat 5 Bosses
+UI_ACHIEVEMENT_BOSS_SLAYER_NAME,Boss 克星,Boss Slayer
+UI_ACHIEVEMENT_BOSS_SLAYER_DESC,累计击败 20 个 Boss,Defeat 20 Bosses
+UI_ACHIEVEMENT_DEEP_DIVER_NAME,深渊行者,Deep Diver
+UI_ACHIEVEMENT_DEEP_DIVER_DESC,到达第 20 关,Reach stage 20
+UI_ACHIEVEMENT_IMMORTAL_NAME,不朽传说,Immortal
+UI_ACHIEVEMENT_IMMORTAL_DESC,到达第 50 关,Reach stage 50
+UI_SHOP_ITEM_NAME_HEALTH_POTION,生命药水,Health Potion
+UI_SHOP_ITEM_DESC_HEALTH_POTION,立即恢复 50% 最大生命值,Restore 50% max HP instantly
+UI_SHOP_ITEM_NAME_ATTACK_BOOST,攻击卷轴,Attack Scroll
+UI_SHOP_ITEM_DESC_ATTACK_BOOST,永久提升基础攻击 +2,Permanently boost base ATK +2
+UI_SHOP_ITEM_NAME_DEFENSE_BOOST,防御卷轴,Defense Scroll
+UI_SHOP_ITEM_DESC_DEFENSE_BOOST,永久提升基础防御 +2,Permanently boost base DEF +2
+UI_SHOP_ITEM_NAME_EXP_POTION,经验药水,EXP Potion
+UI_SHOP_ITEM_DESC_EXP_POTION,接下来 5 场战斗经验 +50%,EXP +50% for next 5 battles
+UI_SHOP_ITEM_NAME_EQUIPMENT_BOX,装备宝箱,Equipment Box
+UI_SHOP_ITEM_DESC_EQUIPMENT_BOX,随机获得一件装备,Get a random equipment
+UI_SHOP_NOT_ENOUGH_GOLD,金币不足,Not enough gold
+UI_SHOP_HP_FULL,生命值已满,HP is full
+UI_SHOP_ATTACK_MAX,攻击卷轴已达购买上限,Attack scroll max reached
+UI_SHOP_DEFENSE_MAX,防御卷轴已达购买上限,Defense scroll max reached
+UI_SHOP_EXP_POTION_MAX,经验药水层数已达上限,EXP potion charges maxed
+UI_SHOP_SYSTEM_NOT_READY,装备系统未初始化,Equipment system not ready
+UI_SHOP_UNKNOWN_ITEM,未知商品,Unknown item
+UI_SHOP_INVENTORY_FULL,背包已满,Inventory full
+UI_SHOP_HEAL_LOG,生命药水恢复 %d 点生命,Health potion restored %d HP
+UI_SHOP_ATTACK_BOOST_LOG,攻击卷轴：攻击 +2,Attack scroll: ATK +2
+UI_SHOP_DEFENSE_BOOST_LOG,防御卷轴：防御 +2,Defense scroll: DEF +2
+UI_SHOP_EXP_POTION_LOG,经验药水生效：剩余 %d 场战斗经验 +%.0f%%,EXP potion active: %d battles left (+%.0f%%)
+UI_SHOP_EQUIPMENT_DROP_LOG,获得装备：%s,Acquired equipment: %s
+UI_SKILL_NAME_HEAL,治愈术,Heal
+UI_SKILL_DESC_HEAL,恢复 %.0f%% 最大生命值,Restore %.0f%% max HP
+UI_SKILL_NAME_HEAVY_HIT,重击,Heavy Hit
+UI_SKILL_DESC_HEAVY_HIT,造成 %.0f%% 攻击伤害,Deal %.0f%% ATK damage
+UI_SKILL_NAME_BERSERK,狂暴,Berserk
+UI_SKILL_DESC_BERSERK,%.0f 秒内攻速翻倍,Double attack speed for %.0f seconds
+UI_SKILL_HEAL_LOG,治愈术恢复 %d 点生命,Heal restored %d HP
+UI_SKILL_HEAVY_HIT_LOG,重击造成 %d 点伤害,Heavy Hit dealt %d damage
+UI_SKILL_BERSERK_START,狂暴开启！攻击速度翻倍,Berserk activated! Attack speed doubled
+UI_SKILL_BERSERK_END,狂暴效果结束,Berserk ended
+UI_STAGE_ENCOUNTER,遭遇了 Lv.%d %s！,Encountered Lv.%d %s!
+UI_STAGE_BOSS_UNLOCK_REQUIRED,需要通关到第 %d 关才能挑战 Boss！,Clear stage %d to challenge Boss!
+UI_STAGE_ALREADY_FIGHTING_BOSS,已经在挑战 Boss 了！,Already fighting Boss!
+UI_STAGE_BOSS_CHALLENGE,挑战 Boss：Lv.%d %s！,Challenging Boss: Lv.%d %s!
+UI_STAGE_BOSS_DEFEATED,Boss 讨伐成功！进入下一区域！,Boss defeated! Advancing to next area!
+UI_REWARD_ENEMY_DEFEATED,击败了 %s！EXP +%d  Gold +%d,Defeated %s! EXP +%d Gold +%d
+UI_REWARD_DROP,掉落：%s,Drop: %s
+UI_REWARD_BAG_FULL_LOST,背包已满，掉落丢失了！,Inventory full - drop lost!
+UI_REWARD_OFFLINE,离线 %s，获得 %d 金币和 %d 经验,Offline for %s - gained %d gold and %d exp
+UI_TIME_FORMAT_HOURS_MINUTES,%d 小时 %d 分钟,%d h %d min
+UI_TIME_FORMAT_MINUTES,%d 分钟,%d min
+UI_GAME_SAVE_LOADED,已加载存档,Save loaded
+UI_GAME_SAVE_LOAD_FAILED,存档加载失败，开始新游戏,Save load failed - starting new game
+UI_GAME_PLAYER_REVIVE,勇者倒下了！正在复活...,Hero fell! Reviving...
+UI_BOSS_HEAL,Boss 恢复了 %d 点生命！,Boss healed %d HP!
+UI_BOSS_BERSERK_START,Boss 进入狂暴状态！攻速翻倍！,Boss is berserk! Attack speed doubled!
+UI_BOSS_BERSERK_END,Boss 狂暴结束,Boss berserk ended
+ENEMY_NAME_史莱姆,史莱姆,Slime
+ENEMY_NAME_哥布林,哥布林,Goblin
+ENEMY_NAME_蝙蝠,蝙蝠,Bat
+ENEMY_NAME_骷髅兵,骷髅兵,Skeleton
+ENEMY_NAME_史莱姆王,史莱姆王,King Slime
+ENEMY_NAME_兽人,兽人,Orc
+ENEMY_NAME_暗影狼,暗影狼,Shadow Wolf
+ENEMY_NAME_石巨人,石巨人,Stone Giant
+ENEMY_NAME_幽灵,幽灵,Ghost
+ENEMY_NAME_恶魔犬,恶魔犬,Demon Hound
+ENEMY_NAME_黑暗骑士,黑暗骑士,Dark Knight
+ENEMY_NAME_亡灵法师,亡灵法师,Lich
+ENEMY_NAME_深渊触手,深渊触手,Abyss Tentacle
+ENEMY_NAME_熔岩怪,熔岩怪,Magma Beast
+ENEMY_NAME_虚空行者,虚空行者,Void Walker
+ENEMY_NAME_恶龙,恶龙,Dragon

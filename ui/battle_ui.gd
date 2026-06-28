@@ -31,11 +31,10 @@ var battle_manager: BattleManager
 @onready var toggle_log_button: Button = %ToggleLogButton
 @onready var boss_button: Button = %BossButton
 @onready var bottom_bar: HBoxContainer = %BottomBar
+@onready var skill_panel: Control = %SkillPanel
 
 const RESPONSIVE_WIDTH_THRESHOLD: int = 1000
 const NARROW_WIDTH_THRESHOLD: int = 700
-
-const GOLD_ICON: Texture2D = preload("res://assets/images/icon_gold.png")
 
 var skill_buttons: Dictionary = {}
 var _skill_by_type: Dictionary = {}
@@ -68,20 +67,25 @@ func _ready() -> void:
 
 	_init_progress_bars()
 	_init_skill_bar()
-	_setup_gold_icon()
+	UIHelpers.add_gold_icon(gold_label, Vector2(14, 14))
 	_update_player_ui()
 	_apply_responsive_layout()
 
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 
-	_log_message("[b]欢迎进入像素挂机勇者[/b]")
-	_log_message("击败敌人 → 获得金币/经验/装备")
-	_log_message("挑战 Boss → 进入下一区域")
+	_log_message(tr("UI_LOG_WELCOME"))
+	_log_message(tr("UI_LOG_TIP_BATTLE"))
+	_log_message(tr("UI_LOG_TIP_BOSS"))
 	
 	## 若 GameManager 在 BattleUI._ready 之前已生成敌人，手动同步一次 UI
 	if battle_manager and battle_manager.enemy_data != null:
 		_on_enemy_spawned(battle_manager.enemy_data)
 		_update_boss_button()
+	
+	## 调试面板：按 F12 显示/隐藏
+	var debug_scene: PackedScene = preload("res://ui/debug_panel.tscn")
+	var debug_panel: CanvasLayer = debug_scene.instantiate() as CanvasLayer
+	add_child(debug_panel)
 	
 	_show_tutorial_if_needed()
 
@@ -92,21 +96,22 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _any_sub_ui_visible():
 		return
 	
-	if event.is_action_pressed("open_equipment"):
+	## 使用 is_action_just_pressed 避免长按/手柄连发导致面板/技能反复切换
+	if event.is_action_pressed("open_equipment", true, true):
 		_on_equipment_button_pressed()
-	elif event.is_action_pressed("open_shop"):
+	elif event.is_action_pressed("open_shop", true, true):
 		_on_shop_button_pressed()
-	elif event.is_action_pressed("open_stats"):
+	elif event.is_action_pressed("open_stats", true, true):
 		_on_stats_button_pressed()
-	elif event.is_action_pressed("open_achievements"):
+	elif event.is_action_pressed("open_achievements", true, true):
 		_on_achievement_button_pressed()
-	elif event.is_action_pressed("open_quests"):
+	elif event.is_action_pressed("open_quests", true, true):
 		_on_quest_button_pressed()
-	elif event.is_action_pressed("cast_skill_1"):
+	elif event.is_action_pressed("cast_skill_1", true, true):
 		_cast_skill_by_index(0)
-	elif event.is_action_pressed("cast_skill_2"):
+	elif event.is_action_pressed("cast_skill_2", true, true):
 		_cast_skill_by_index(1)
-	elif event.is_action_pressed("cast_skill_3"):
+	elif event.is_action_pressed("cast_skill_3", true, true):
 		_cast_skill_by_index(2)
 
 func _any_sub_ui_visible() -> bool:
@@ -118,9 +123,13 @@ func _any_sub_ui_visible() -> bool:
 func _cast_skill_by_index(index: int) -> void:
 	if Services.skill_manager == null:
 		return
-	var types: Array = Services.skill_manager.skills.map(func(s: SkillData) -> int: return s.type)
-	if index < types.size():
-		Services.skill_manager.cast_skill(types[index])
+	var skills: Array[SkillData] = Services.skill_manager.skills
+	if index < 0 or index >= skills.size():
+		return
+	var skill: SkillData = skills[index]
+	if not Services.skill_manager.can_cast(skill):
+		return
+	Services.skill_manager.cast_skill(skill)
 
 func _show_tutorial_if_needed() -> void:
 	if player_data == null or player_data.level > 1 or player_data.play_time_seconds > 0:
@@ -129,10 +138,10 @@ func _show_tutorial_if_needed() -> void:
 	var tutorial: CanvasLayer = tutorial_scene.instantiate() as CanvasLayer
 	add_child(tutorial)
 	var steps: Array[Dictionary] = [
-		{"text": "[center][b]欢迎来到像素挂机勇者[/b][/center]\n这是一款自动战斗挂机 RPG，勇者和敌人会自动攻击。", "target": ""},
-		{"text": "[center]这里是技能栏[/center]\n消耗能量释放技能，数字键 1/2/3 可快速施放。", "target": "MainMargin/RootVBox/MainArea/SidePanel/SkillPanel"},
-		{"text": "[center]底部是功能按钮[/center]\n装备(E)、商店(S)、统计(T)、成就(A)、任务(Q)。", "target": "MainMargin/RootVBox/BottomBar"},
-		{"text": "[center]挑战 Boss[/center]\n每 5 关可挑战一次 Boss，通关后进入下一区域。", "target": "MainMargin/RootVBox/BottomBar/BossButton"},
+		{"text": tr("UI_TUTORIAL_WELCOME"), "target": null},
+		{"text": tr("UI_TUTORIAL_SKILL"), "target": skill_panel},
+		{"text": tr("UI_TUTORIAL_BUTTONS"), "target": bottom_bar},
+		{"text": tr("UI_TUTORIAL_BOSS"), "target": boss_button},
 	]
 	tutorial.start(steps)
 
@@ -165,8 +174,8 @@ func _apply_responsive_layout() -> void:
 		_set_bottom_button_compact(false)
 
 func _set_bottom_button_compact(compact: bool) -> void:
-	var texts: PackedStringArray = ["挑战 Boss", "装备", "商店", "统计", "成就", "任务"]
-	var compact_texts: PackedStringArray = ["Boss", "装备", "商店", "统计", "成就", "任务"]
+	var texts: PackedStringArray = [tr("UI_BATTLE_BOSS"), tr("UI_BATTLE_EQUIPMENT"), tr("UI_BATTLE_SHOP"), tr("UI_BATTLE_STATS"), tr("UI_BATTLE_ACHIEVEMENTS"), tr("UI_BATTLE_QUESTS")]
+	var compact_texts: PackedStringArray = ["Boss", tr("UI_BATTLE_EQUIPMENT"), tr("UI_BATTLE_SHOP"), tr("UI_BATTLE_STATS"), tr("UI_BATTLE_ACHIEVEMENTS"), tr("UI_BATTLE_QUESTS")]
 	var buttons: Array[Button] = [
 		boss_button,
 		%EquipmentButton,
@@ -213,21 +222,12 @@ func _init_skill_bar() -> void:
 		var btn: Button = Button.new()
 		btn.custom_minimum_size = Vector2(44, 36)
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.text = "%s\n%d" % [skill.skill_name, skill.energy_cost]
+		btn.text = "%s\n%d" % [tr(skill.skill_name), skill.energy_cost]
 		btn.pressed.connect(_on_skill_button_pressed.bind(skill))
-		btn.mouse_entered.connect(_play_ui_hover)
+		btn.mouse_entered.connect(UIHelpers.play_ui_hover)
 		skill_buttons[skill.type] = btn
 		_skill_by_type[skill.type] = skill
 		skill_bar.add_child(btn)
-
-func _setup_gold_icon() -> void:
-	var icon: TextureRect = TextureRect.new()
-	icon.texture = GOLD_ICON
-	icon.custom_minimum_size = Vector2(14, 14)
-	icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	gold_label.get_parent().add_child(icon)
-	gold_label.get_parent().move_child(icon, gold_label.get_index())
 
 func _update_player_ui() -> void:
 	if player_data == null:
@@ -237,8 +237,8 @@ func _update_player_ui() -> void:
 	player_hp.value = player_data.hp
 	exp_bar.max_value = player_data.exp_to_next
 	exp_bar.value = player_data.exp
-	gold_label.text = "%d" % player_data.gold
-	stage_label.text = Services.stage_manager.get_stage_display() if Services.stage_manager else "第 1 关"
+	gold_label.text = "%s" % UIHelpers.format_number(player_data.gold)
+	stage_label.text = Services.stage_manager.get_stage_display() if Services.stage_manager else tr("UI_BATTLE_STAGE")
 
 func _on_enemy_spawned(enemy: EnemyData) -> void:
 	enemy_name.text = enemy.name
@@ -248,22 +248,22 @@ func _on_enemy_spawned(enemy: EnemyData) -> void:
 
 func _on_enemy_defeated(enemy: EnemyData) -> void:
 	if enemy.is_boss:
-		_log_message("[color=gold]恭喜！击败了 Boss！[/color]")
+		_log_message(tr("UI_LOG_BOSS_DEFEATED"))
 
 func _on_player_attacked(damage: int, is_crit: bool) -> void:
 	## 玩家数值变动已由 stats_changed → 脏标记驱动刷新，此处仅记录战斗日志。
-	var crit_text: String = "[color=yellow]暴击[/color] " if is_crit else ""
-	_log_message("你造成 %s%d 点伤害" % [crit_text, damage])
+	var crit_text: String = tr("UI_LOG_CRIT") if is_crit else ""
+	_log_message(tr("UI_LOG_PLAYER_DAMAGE") % [crit_text, damage])
 
 func _on_enemy_attacked(damage: int, is_crit: bool) -> void:
-	var crit_text: String = "[color=red]暴击[/color] " if is_crit else ""
-	_log_message("敌人造成 %s%d 点伤害" % [crit_text, damage])
+	var crit_text: String = tr("UI_LOG_ENEMY_CRIT") if is_crit else ""
+	_log_message(tr("UI_LOG_ENEMY_DAMAGE") % [crit_text, damage])
 
 func _on_level_up(new_level: int) -> void:
-	_log_message("[color=cyan]升级！当前等级 Lv.%d[/color]" % new_level)
+	_log_message(tr("UI_LOG_LEVEL_UP") % new_level)
 
 func _on_stage_changed(stage: int) -> void:
-	stage_label.text = "第 %d 关" % stage
+	stage_label.text = tr("UI_STAGE_FORMAT") % stage
 	_update_boss_button()
 
 func _on_energy_changed(current: int, maximum: int) -> void:
@@ -272,7 +272,7 @@ func _on_energy_changed(current: int, maximum: int) -> void:
 	_update_skill_buttons()
 
 func _on_skill_casted(skill: SkillData) -> void:
-	_log_message("释放技能：[color=aqua]%s[/color]" % skill.skill_name)
+	_log_message(tr("UI_LOG_SKILL_CAST") % tr(skill.skill_name))
 	_update_skill_button(skill.type)
 
 func _on_cooldown_updated(skill_type: int, _remaining: float) -> void:
@@ -293,9 +293,9 @@ func _update_skill_button(type: int) -> void:
 	var cd: float = sm.get_remaining_cooldown(type)
 	btn.disabled = not sm.can_cast(skill)
 	if cd > 0.0:
-		btn.text = "%s\n%.1fs" % [skill.skill_name, cd]
+		btn.text = "%s\n%.1fs" % [tr(skill.skill_name), cd]
 	else:
-		btn.text = "%s\n%d" % [skill.skill_name, skill.energy_cost]
+		btn.text = "%s\n%d" % [tr(skill.skill_name), skill.energy_cost]
 	
 	## 可用高亮
 	if not btn.disabled:
@@ -318,42 +318,42 @@ func _log_message(text: String) -> void:
 		_current_log.scroll_to_line(_current_log.get_line_count() - 1)
 
 func _on_boss_button_pressed() -> void:
-	_play_ui_click()
+	UIHelpers.play_ui_click()
 	if Services.stage_manager:
 		Services.stage_manager.challenge_boss()
 
 func _on_equipment_button_pressed() -> void:
-	_play_ui_click()
+	UIHelpers.play_ui_click()
 	if equipment_ui:
 		equipment_ui.show_equipment()
 		visible = false
 
 func _on_shop_button_pressed() -> void:
-	_play_ui_click()
+	UIHelpers.play_ui_click()
 	if shop_ui:
 		shop_ui.show_shop()
 		visible = false
 
 func _on_stats_button_pressed() -> void:
-	_play_ui_click()
+	UIHelpers.play_ui_click()
 	if stats_ui:
 		stats_ui.show_stats()
 		visible = false
 
 func _on_achievement_button_pressed() -> void:
-	_play_ui_click()
+	UIHelpers.play_ui_click()
 	if achievement_ui:
 		achievement_ui.show_achievements()
 		visible = false
 
 func _on_quest_button_pressed() -> void:
-	_play_ui_click()
+	UIHelpers.play_ui_click()
 	if quest_ui:
 		quest_ui.show_quests()
 		visible = false
 
 func _on_skill_button_pressed(skill: SkillData) -> void:
-	_play_ui_click()
+	UIHelpers.play_ui_click()
 	if Services.skill_manager:
 		Services.skill_manager.cast_skill(skill)
 
@@ -371,14 +371,10 @@ func _update_boss_button() -> void:
 	var can_challenge: bool = stage_manager.current_enemy_level >= stage_manager.boss_unlock_level and not stage_manager.is_fighting_boss
 	boss_button.disabled = not can_challenge
 	if stage_manager.is_fighting_boss:
-		boss_button.text = "Boss 战中"
+		boss_button.text = tr("UI_BATTLE_BOSS_FIGHTING")
 	elif can_challenge:
-		boss_button.text = "挑战 Boss"
+		boss_button.text = tr("UI_BATTLE_BOSS")
 	else:
-		boss_button.text = "通关 %d 关解锁" % stage_manager.boss_unlock_level
+		boss_button.text = tr("UI_BATTLE_BOSS_UNLOCK") % stage_manager.boss_unlock_level
 
-func _play_ui_click() -> void:
-	EventBus.play_sfx.emit("ui_click")
 
-func _play_ui_hover() -> void:
-	EventBus.play_sfx.emit("ui_hover")
